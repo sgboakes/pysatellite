@@ -1,9 +1,0 @@
-LICENSE
-README.md
-pyproject.toml
-setup.cfg
-setup.py
-pysatellite.egg-info/PKG-INFO
-pysatellite.egg-info/SOURCES.txt
-pysatellite.egg-info/dependency_links.txt
-pysatellite.egg-info/top_level.txt
