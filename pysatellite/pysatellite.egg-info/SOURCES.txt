@@ -1,0 +1,13 @@
+LICENSE
+README.md
+pyproject.toml
+setup.cfg
+setup.py
+src/Scripts/__init__.py
+src/Scripts/transparent_earth_EKF.py
+src/Transformations/Transformations.py
+src/Transformations/__init__.py
+src/pysatellite.egg-info/PKG-INFO
+src/pysatellite.egg-info/SOURCES.txt
+src/pysatellite.egg-info/dependency_links.txt
+src/pysatellite.egg-info/top_level.txt
