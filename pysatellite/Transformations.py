@@ -33,9 +33,9 @@ def AERtoECI(posAER, latOri, lonOri, OriECEF, stepLength, stepNum):
     sin = np.sin
     cos = np.cos
 
-    az = posAER(0)
-    elev = posAER(1)
-    range = posAER(2)
+    az = posAER[0]
+    elev = posAER[1]
+    ran = posAER[2]
 
     # if abs(az-2*pi) < 1e-5 || abs(az-pi) < 1e-5 || abs(pi) < 1e-5
     #     posLLA = [NaN NaN NaN]
@@ -45,8 +45,8 @@ def AERtoECI(posAER, latOri, lonOri, OriECEF, stepLength, stepNum):
     #     return
     # end
 
-    zUp = range * sin(elev)
-    r   = range * cos(elev)
+    zUp = ran * sin(elev)
+    r   = ran * cos(elev)
     yEast  = r * sin(az)
     xNorth = r * cos(az)
 
@@ -63,9 +63,9 @@ def AERtoECI(posAER, latOri, lonOri, OriECEF, stepLength, stepNum):
     dx = cosLambda * t - sinLambda * yEast
     dy = sinLambda * t + cosLambda * yEast
 
-    xECEF = OriECEF(0) + dx
-    yECEF = OriECEF(1) + dy
-    zECEF = OriECEF(2) + dz
+    xECEF = OriECEF[0] + dx
+    yECEF = OriECEF[1] + dy
+    zECEF = OriECEF[2] + dz
 
     posECEF = [xECEF], [yECEF], [zECEF]
 
@@ -102,12 +102,12 @@ def AERtoLLA(posAER, OriECEF, latOri, lonOri, WGS):
     sin = np.sin
     cos = np.cos
 
-    az = posAER(0)
-    elev = posAER(1)
-    range = posAER(2)
+    az = posAER[0]
+    elev = posAER[1]
+    ran = posAER[2]
 
-    zUp = range * sin(elev)
-    r   = range * cos(elev)
+    zUp = ran * sin(elev)
+    r   = ran * cos(elev)
     yEast  = r * sin(az)
     xNorth = r * cos(az)
 
@@ -124,29 +124,29 @@ def AERtoLLA(posAER, OriECEF, latOri, lonOri, WGS):
     dx = cosLambda * t - sinLambda * yEast
     dy = sinLambda * t + cosLambda * yEast
 
-    xECEF = OriECEF(0) + dx
-    yECEF = OriECEF(1) + dy
-    zECEF = OriECEF(2) + dz
+    xECEF = OriECEF[0] + dx
+    yECEF = OriECEF[1] + dy
+    zECEF = OriECEF[2] + dz
 
 
     # Ellipsoid properties
-    a = WGS.SemimajorAxis # Semimajor axis
-    b = WGS.SemiminorAxis # Semiminor axis
-    f = WGS.Flattening    # Flattening
+    a = WGS["SemimajorAxis"] # Semimajor axis
+    b = WGS["SemiminorAxis"] # Semiminor axis
+    f = WGS["Flattening"]    # Flattening
     e2 = f * (2 - f)      # Square of (first) eccentricity
     ep2 = e2 / (1 - e2)   # Square of second eccentricity
-    e = np.sqrt((a^2 - b^2) / a^2)
-    ePrime = np.sqrt((a^2 - b^2) / b^2)
+    e = np.sqrt((a**2 - b**2) / a**2)
+    ePrime = np.sqrt((a**2 - b**2) / b**2)
 
 
     #Closed formula set
-    p = np.sqrt(xECEF^2+yECEF^2)
+    p = np.sqrt(xECEF**2+yECEF**2)
     theta = np.arctan2((zECEF * a), (p * b))
 
     lon = np.arctan2(yECEF,xECEF)
     #lon = mod(lon,2*pi)
-    lat = np.arctan2((zECEF + (ePrime^2 * b * (sin(theta))^3)), (p - (e^2 * a * (cos(theta))^3)))
-    N = a / (np.sqrt(1 - e^2 * (sin(lat))^2))
+    lat = np.arctan2((zECEF + (ePrime**2 * b * (sin(theta))**3)), (p - (e**2 * a * (cos(theta))**3)))
+    N = a / (np.sqrt(1 - e**2 * (sin(lat))**2))
     alt = (p / cos(lat)) - N
 
     posLLA = [lat], [lon], [alt]
@@ -168,12 +168,12 @@ def AERtoNED(posAER):
     sin = np.sin
     cos = np.cos
 
-    az = posAER(0)
-    elev = posAER(1)
-    range = posAER(2)
+    az = posAER[0]
+    elev = posAER[1]
+    ran = posAER[2]
 
-    zUp = range * sin(elev)
-    r   = range * cos(elev)
+    zUp = ran * sin(elev)
+    r   = ran * cos(elev)
     yEast  = r * sin(az)
     xNorth = r * cos(az)
 
@@ -228,26 +228,26 @@ def ECEFtoLLA(posECEF, WGS):
     cos = np.cos
 
     # Ellipsoid properties
-    a = WGS.SemimajorAxis            # Semimajor axis
-    b = WGS.SemiminorAxis            # Semiminor axis
-    e = np.sqrt((a^2 - b^2) / a^2)      # Square of (first) eccentricity
-    ePrime = np.sqrt((a^2 - b^2) / b^2) # Square of second eccentricity
+    a = WGS["SemimajorAxis"]            # Semimajor axis
+    b = WGS["SemiminorAxis"]            # Semiminor axis
+    e = np.sqrt((a**2 - b**2) / a**2)      # Square of (first) eccentricity
+    ePrime = np.sqrt((a**2 - b**2) / b**2) # Square of second eccentricity
 
-    xECEF = posECEF(0)
-    yECEF = posECEF(1)
-    zECEF = posECEF(2)
+    xECEF = posECEF[0]
+    yECEF = posECEF[1]
+    zECEF = posECEF[2]
 
 
     #Closed formula set
-    p = np.sqrt(xECEF^2+yECEF^2)
+    p = np.sqrt(xECEF**2+yECEF**2)
     theta = np.arctan2((zECEF * a), (p * b))
 
     lon = np.arctan2(yECEF,xECEF)
     #lon = mod(lon,2*pi)
 
-    lat = np.arctan2((zECEF + (ePrime^2 * b * (sin(theta))^3)), (p - (e^2 * a * (cos(theta))^3)))
+    lat = np.arctan2((zECEF + (ePrime**2 * b * (sin(theta))**3)), (p - (e**2 * a * (cos(theta))**3)))
 
-    N = a / (np.sqrt(1 - e^2 * (sin(lat))^2))
+    N = a / (np.sqrt(1 - e**2 * (sin(lat))**2))
 
     alt = (p / cos(lat)) - N
 
@@ -277,23 +277,23 @@ def ECEFtoNED(posECEF, OriECEF, latOri, lonOri):
     sin = np.sin
     cos = np.cos
 
-    xObj = posECEF(0)
-    yObj = posECEF(1)
-    zObj = posECEF(2)
+    xObj = posECEF[0]
+    yObj = posECEF[1]
+    zObj = posECEF[2]
 
 
     #Generate matrices for multiplication
     rotationMatrix = [-(sin(lonOri)), cos(lonOri), 0], [(-(sin(latOri))*cos(lonOri)), (-(sin(latOri))*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]
 
-    coordMatrix = [xObj - OriECEF(0)], [yObj - OriECEF(1)], [zObj - OriECEF(2)]
+    coordMatrix = [xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]
 
     #Find ENU vector
     ENU = np.matmul(rotationMatrix, coordMatrix)
 
     #Convert ENU vector to NED vector
-    xNorth = ENU(1)
-    yEast = ENU(0)
-    zDown = -ENU(2)
+    xNorth = ENU[1]
+    yEast = ENU[0]
+    zDown = -ENU[2]
 
     posNED = [xNorth], [yEast], [zDown]
     return posNED
@@ -334,40 +334,43 @@ def ECItoAER(posECI, stepLength, stepNum, OriECEF, latOri, lonOri):
     posECEF = np.matmul(rotationMatrix, posECI)
 
     #~~Possible check for rounding errors at posistions close to ECI axes
-    # if abs(posECEF(1)) < 1e-5
+    # if abs(posECEF[1]) < 1e-5
     #     posAER = [NaN NaN NaN]
     #     return
-    # elseif abs(posECEF(2)) < 1e-5
+    # elseif abs(posECEF[2]) < 1e-5
     #     posAER = [NaN NaN NaN]
     #     return
     # end
 
 
-    xObj = posECEF(0)
-    yObj = posECEF(1)
-    zObj = posECEF(2)
+    xObj = posECEF[0]
+    yObj = posECEF[1]
+    zObj = posECEF[2]
 
-    transformMatrix = [-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]
+    transformMatrix = [[-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]]
+    transformMatrix = np.array(transformMatrix)
 
-
-    posECEFMatrix = [xObj - OriECEF(0)], [yObj - OriECEF(1)], [zObj - OriECEF(2)]
+    # posECEFMatrix = [[xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]]
+    # posECEFMatrix = np.array(posECEFMatrix)
+    
+    posECEFMatrix = np.array([[(xObj - OriECEF[0]), (yObj - OriECEF[1]), (zObj - OriECEF[2])]]).T
 
     #Find ENU vector
-    ENU = transformMatrix * posECEFMatrix
+    #ENU = transformMatrix * posECEFMatrix
     ENU = np.matmul(transformMatrix, posECEFMatrix)
 
     #Convert ENU vector to NED vector
-    xNorth = ENU(1)
-    yEast = ENU(0)
-    zDown = -ENU(2)
+    xNorth = ENU[1]
+    yEast = ENU[0]
+    zDown = -ENU[2]
 
 
     r1 = np.hypot(xNorth, yEast)
-    range = np.hypot(r1,zDown)
+    ran = np.hypot(r1,zDown)
     elevation = np.arctan2(-zDown,r1)
     azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.pi)
 
-    posAER = [azimuth], [elevation], [range]
+    posAER = [azimuth], [elevation], [ran]
     return posAER
 
 
@@ -424,28 +427,28 @@ def ECItoLLA(posECI, stepLength, stepNum, WGS):
     #omega = 2*pi / (24*60*60)
 
     # Ellipsoid properties
-    a = WGS.SemimajorAxis            # Semimajor axis
-    b = WGS.SemiminorAxis            # Semiminor axis
-    e = np.sqrt((a^2 - b^2) / a^2)      # Square of (first) eccentricity
-    ePrime = np.sqrt((a^2 - b^2) / b^2) # Square of second eccentricity
+    a = WGS["SemimajorAxis"]            # Semimajor axis
+    b = WGS["SemiminorAxis"]            # Semiminor axis
+    e = np.sqrt((a**2 - b**2) / a**2)      # Square of (first) eccentricity
+    ePrime = np.sqrt((a**2 - b**2) / b**2) # Square of second eccentricity
 
     rotationMatrix = [cos(stepNum*stepLength*omega), sin(stepNum*stepLength*omega), 0], [-sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
 
     posECEF = np.matmul(rotationMatrix,posECI)
-    xECEF = posECEF(1)
-    yECEF = posECEF(2)
+    xECEF = posECEF[1]
+    yECEF = posECEF[2]
     zECEF = posECEF(3)
 
     #Closed formula set
-    p = np.sqrt(xECEF^2+yECEF^2)
+    p = np.sqrt(xECEF**2+yECEF**2)
     theta = np.arctan2((zECEF * a), (p * b))
 
     lon = np.arctan2(yECEF,xECEF)
     #lon = mod(lon,2*pi)
 
-    lat = np.arctan2((zECEF + (ePrime^2 * b * (sin(theta))^3)), (p - (e^2 * a * (cos(theta))^3)))
+    lat = np.arctan2((zECEF + (ePrime**2 * b * (sin(theta))**3)), (p - (e**2 * a * (cos(theta))**3)))
 
-    N = a / (np.sqrt(1 - e^2 * (sin(lat))^2))
+    N = a / (np.sqrt(1 - e**2 * (sin(lat))**2))
 
     alt = (p / cos(lat)) - N
 
@@ -478,43 +481,43 @@ def LLAtoAER(posLLA, OriECEF, latOri, lonOri, WGS):
     cos = np.cos
 
     #Ellipsoid parameters
-    a = WGS.SemimajorAxis
-    b = WGS.SemiminorAxis
-    e = WGS.Eccentricity
+    a = WGS["SemimajorAxis"]
+    b = WGS["SemiminorAxis"]
+    e = WGS["Eccentricity"]
 
 
-    lat = posLLA(0)
-    lon = posLLA(1)
-    alt = posLLA(2)
+    lat = posLLA[0]
+    lon = posLLA[1]
+    alt = posLLA[2]
 
     #Prime vertical radius of curvature N(phi)
-    #Formula if eccentricty not defined: NPhi = a^2 / (sqrt((a^2*(cos(lat)^2))+(b^2*(sin(lat)^2))))
+    #Formula if eccentricty not defined: NPhi = a**2 / (sqrt((a**2*(cos(lat)**2))+(b**2*(sin(lat)**2))))
 
-    NPhi = a / (np.sqrt(1 - (e^2*(sin(lat))^2)))
+    NPhi = a / (np.sqrt(1 - (e**2*(sin(lat))**2)))
     xECEF = (NPhi + alt) * cos(lat) * cos(lon)
     yECEF = (NPhi + alt) * cos(lat) * sin(lon)
-    zECEF = (((b^2/a^2)*NPhi) + alt)*sin(lat)
+    zECEF = (((b**2/a**2)*NPhi) + alt)*sin(lat)
 
     #Generate matrices for multiplication
     rotationMatrix = [-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]
 
-    coordMatrix = [xECEF - OriECEF(0)], [yECEF - OriECEF(1)], [zECEF - OriECEF(2)]
+    coordMatrix = [xECEF - OriECEF[0]], [yECEF - OriECEF[1]], [zECEF - OriECEF[2]]
 
     #Find ENU vector
     ENU = rotationMatrix * coordMatrix
 
     #Convert ENU vector to NED vector
-    xNorth = ENU(1)
-    yEast = ENU(0)
-    zDown = -ENU(2)
+    xNorth = ENU[1]
+    yEast = ENU[0]
+    zDown = -ENU[2]
 
 
     r1 = np.hypot(xNorth, yEast)
-    range = np.hypot(r1,zDown)
+    ran = np.hypot(r1,zDown)
     elevation = np.arctan2(-zDown,r1)
     azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.pi)
 
-    posAER = [azimuth], [elevation], [range]
+    posAER = [azimuth], [elevation], [ran]
     return posAER
 
 def LLAtoECEF(posLLA, WGS):
@@ -535,24 +538,26 @@ def LLAtoECEF(posLLA, WGS):
     cos = np.cos
 
     #Ellipsoid parameters
-    a = WGS.SemimajorAxis
-    b = WGS.SemiminorAxis
-    e = WGS.Eccentricity
+    a = WGS["SemimajorAxis"]
+    b = WGS["SemiminorAxis"]
+    e = WGS["Eccentricity"]
 
 
-    lat = posLLA(0)
-    lon = posLLA(1)
-    alt = posLLA(2)
+    lat = posLLA[0]
+    lon = posLLA[1]
+    alt = posLLA[2]
 
     #Prime vertical radius of curvature N(phi)
-    #Formula if eccentricty not defined: NPhi = a^2 / (sqrt((a^2*(cos(lat)^2))+(b^2*(sin(lat)^2))))
+    #Formula if eccentricty not defined: NPhi = a**2 / (sqrt((a**2*(cos(lat)**2))+(b**2*(sin(lat)**2))))
 
-    NPhi = a / (np.sqrt(1 - (e^2*(sin(lat))^2)))
+    NPhi = a / (np.sqrt(1 - (e**2*(sin(lat))**2)))
     xECEF = (NPhi + alt) * cos(lat) * cos(lon)
     yECEF = (NPhi + alt) * cos(lat) * sin(lon)
-    zECEF = (((b^2/a^2)*NPhi) + alt)*sin(lat)
+    zECEF = (((b**2/a**2)*NPhi) + alt)*sin(lat)
 
-    posECEF = [xECEF], [yECEF], [zECEF]
+    posECEF = np.array([[xECEF],
+                        [yECEF],
+                        [zECEF]])
     return posECEF
 
 
@@ -580,22 +585,22 @@ def LLAtoECI(posLLA, stepLength, stepNum, WGS):
     omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
 
     #Ellipsoid parameters
-    a = WGS.SemimajorAxis
-    b = WGS.SemiminorAxis
-    e = WGS.Eccentricity
+    a = WGS["SemimajorAxis"]
+    b = WGS["SemiminorAxis"]
+    e = WGS["Eccentricity"]
 
 
-    lat = posLLA(0)
-    lon = posLLA(1)
-    alt = posLLA(2)
+    lat = posLLA[0]
+    lon = posLLA[1]
+    alt = posLLA[2]
 
     #Prime vertical radius of curvature N(phi)
-    #Formula if eccentricty not defined: NPhi = a^2 / (sqrt((a^2*(cos(lat)^2))+(b^2*(sin(lat)^2))))
+    #Formula if eccentricty not defined: NPhi = a**2 / (sqrt((a**2*(cos(lat)**2))+(b**2*(sin(lat)**2))))
 
-    NPhi = a / (np.sqrt(1 - (e^2*(sin(lat))^2)))
+    NPhi = a / (np.sqrt(1 - (e**2*(sin(lat))**2)))
     xECEF = (NPhi + alt) * cos(lat) * cos(lon)
     yECEF = (NPhi + alt) * cos(lat) * sin(lon)
-    zECEF = (((b^2/a^2)*NPhi) + alt)*sin(lat)
+    zECEF = (((b**2/a**2)*NPhi) + alt)*sin(lat)
 
     posECEF = [xECEF], [yECEF], [zECEF]
 
@@ -619,16 +624,16 @@ def NEDtoAER(posNED):
         positions in radians, respectively.
     '''
     
-    xNorth = posNED(0)
-    yEast = posNED(1)
-    zDown = posNED(2)
+    xNorth = posNED[0]
+    yEast = posNED[1]
+    zDown = posNED[2]
 
     r1 = np.hypot(xNorth, yEast)
-    range = np.hypot(r1,zDown)
+    ran = np.hypot(r1,zDown)
     elevation = np.arctan2(-zDown,r1)
     azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.pi)
 
-    posAER = [azimuth], [elevation], [range]
+    posAER = [azimuth], [elevation], [ran]
     return posAER
 
 def NEDtoECEF(posNED, OriECEF, latOri, lonOri):
@@ -658,9 +663,9 @@ def NEDtoECEF(posNED, OriECEF, latOri, lonOri):
     cosLambda = cos(lonOri)
     sinLambda = sin(lonOri)
 
-    xNorth = posNED(0)
-    yEast = posNED(1)
-    zDown = posNED(2)
+    xNorth = posNED[0]
+    yEast = posNED[1]
+    zDown = posNED[2]
 
     t = cosPhi * -zDown - sinPhi * xNorth
     dz = sinPhi * -zDown + cosPhi * xNorth
@@ -668,9 +673,9 @@ def NEDtoECEF(posNED, OriECEF, latOri, lonOri):
     dx = cosLambda * t - sinLambda * yEast
     dy = sinLambda * t + cosLambda * yEast
 
-    xECEF = OriECEF(0) + dx
-    yECEF = OriECEF(1) + dy
-    zECEF = OriECEF(2) + dz
+    xECEF = OriECEF[0] + dx
+    yECEF = OriECEF[1] + dy
+    zECEF = OriECEF[2] + dz
 
     posECEF = [xECEF], [yECEF], [zECEF]
     return posECEF
