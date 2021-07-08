@@ -63,11 +63,11 @@ def AERtoECI(posAER, latOri, lonOri, OriECEF, stepLength, stepNum):
     dx = cosLambda * t - sinLambda * yEast
     dy = sinLambda * t + cosLambda * yEast
 
-    xECEF = OriECEF[0] + dx
-    yECEF = OriECEF[1] + dy
-    zECEF = OriECEF[2] + dz
+    xECEF = np.float64(OriECEF[0] + dx)
+    yECEF = np.float64(OriECEF[1] + dy)
+    zECEF = np.float64(OriECEF[2] + dz)
 
-    posECEF = [xECEF], [yECEF], [zECEF]
+    posECEF = [[xECEF], [yECEF], [zECEF]]
 
     
 
@@ -348,21 +348,19 @@ def ECItoAER(posECI, stepLength, stepNum, OriECEF, latOri, lonOri):
     zObj = posECEF[2]
 
     transformMatrix = [[-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]]
-    transformMatrix = np.array(transformMatrix)
+    transformMatrix = np.array(transformMatrix, dtype=object)
 
-    # posECEFMatrix = [[xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]]
-    # posECEFMatrix = np.array(posECEFMatrix)
-    
-    posECEFMatrix = np.array([[(xObj - OriECEF[0]), (yObj - OriECEF[1]), (zObj - OriECEF[2])]]).T
+    posECEFMatrix = [[xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]]
+    posECEFMatrix = np.reshape(np.array(posECEFMatrix), (3,1))
 
     #Find ENU vector
     #ENU = transformMatrix * posECEFMatrix
     ENU = np.matmul(transformMatrix, posECEFMatrix)
 
     #Convert ENU vector to NED vector
-    xNorth = ENU[1]
-    yEast = ENU[0]
-    zDown = -ENU[2]
+    xNorth = np.float64(ENU[1])
+    yEast = np.float64(ENU[0])
+    zDown = -np.float64(ENU[2])
 
 
     r1 = np.hypot(xNorth, yEast)
@@ -370,7 +368,7 @@ def ECItoAER(posECI, stepLength, stepNum, OriECEF, latOri, lonOri):
     elevation = np.arctan2(-zDown,r1)
     azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.pi)
 
-    posAER = [azimuth], [elevation], [ran]
+    posAER = np.array([[azimuth], [elevation], [ran]])
     return posAER
 
 

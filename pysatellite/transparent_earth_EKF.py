@@ -53,7 +53,7 @@ if __name__ == "__main__":
         
     satAER = np.zeros((3,simLength))
     for count in range(simLength):
-        satAER[:,count] = Transformations.ECItoAER(satECI[:,count], stepLength, count, sensECEF, sensLLA[0], sensLLA[1])
+        satAER[:,[count]] = Transformations.ECItoAER(satECI[:,count], stepLength, count, sensECEF, sensLLA[0], sensLLA[1])
         
         
     angMeasDev = 1e-6
@@ -63,3 +63,66 @@ if __name__ == "__main__":
     satAERMes[1,:] = satAER[1,:] + (angMeasDev*np.random.randn(1,simLength))
     satAERMes[2,:] = satAER[2,:] + (rangeMeasDev*np.random.randn(1,simLength))
     
+    
+    # ~~~~ Convert back to ECI
+    
+    satECIMes = np.zeros((3,simLength))
+    for count in range(simLength):
+        satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,1], sensLLA[1], sensLLA[2], sensECEF, stepLength, count)
+    
+    
+    # ~~~~ KF Matrices
+    
+    # Initialise state vector
+    # (x, y, z, v_x, v_y, v_z)
+    xState = np.array([[0],
+                       [0],
+                       [satRadius],
+                       [0],
+                       [0],
+                       [0]])
+    
+    G = 6.67e-11
+    m_e = 5.972e24
+    m_s = 20
+    
+    v = np.sqrt((G*m_e) / np.linalg.norm(xState[0:3])) * np.array([[1],[0],[0]])
+    xState[3:6] = v
+    
+    # Process noise
+    stdAng = 2e0
+    coefA = 0.25 * stepLength**4 * stdAng**2
+    coefB = stepLength**2 * stdAng**2
+    coefC = 0.5 * stepLength**3 * stdAng**2
+    
+    stdRange = 2e1
+    coefA2 = 0.25 * stepLength**4 * stdRange**2
+    coefB2 = stepLength**2 * stdRange**2
+    coefC2 = 0.5 * stepLength**3 * stdRange**2
+    
+    procNoise = np.array([[coefA, 0, 0, coefC, 0, 0],
+                          [0, coefA2, 0, 0, coefC2, 0],
+                          [0, 0, coefA, 0, 0, coefC],
+                          [coefC, 0, 0, coefB, 0, 0],
+                          [0, coefC2, 0, 0, coefB2, 0],
+                          [0, 0, coefC, 0, 0, coefB]])
+    
+    covState = 1e10 * np.identity(6)
+    
+    covAER = np.array([[(angMeasDev * 180/2)**2, 0, 0],
+                       [0, (angMeasDev * 180/2)**2, 0],
+                       [0, 0, rangeMeasDev]])
+    
+    measureMatrix = np.append(np.identity(3), np.zeros((3,3)), axis=1)
+    
+    totalStates = np.zeros((6,simLength))
+    err_X_ECI = np.zeros((1,simLength))
+    err_Y_ECI = np.zeros((1,simLength))
+    err_Z_ECI = np.zeros((1,simLength))
+    
+    # ~~~~ Using EKF
+    
+    delta = 1e-6
+    for count in range(simLength):
+        #Func params
+        one = 1
