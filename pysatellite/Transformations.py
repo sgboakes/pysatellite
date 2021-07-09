@@ -8,7 +8,7 @@ Created on Mon May 17 13:00:45 2021
 import numpy as np
 
 
-def AERtoECI(posAER, latOri, lonOri, OriECEF, stepLength, stepNum):
+def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     '''
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
 

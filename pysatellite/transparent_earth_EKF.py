@@ -4,11 +4,13 @@ Created 10/06/2021
 '''
 
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import sys
 import os
 # import Transformations
 from pysatellite import Transformations
+from pysatellite.jacobian_finder import jacobian_finder as jf
 
 if __name__ == "__main__":
 
@@ -68,7 +70,7 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3,simLength))
     for count in range(simLength):
-        satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,1], sensLLA[1], sensLLA[2], sensECEF, stepLength, count)
+        satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,1], stepLength, count, sensECEF, sensLLA[0], sensLLA[1])
     
     
     # ~~~~ KF Matrices
@@ -125,4 +127,12 @@ if __name__ == "__main__":
     delta = 1e-6
     for count in range(simLength):
         #Func params
-        one = 1
+        func_params = {
+            "stepLength": stepLength,
+            "count": count,
+            "sensECEF": sensECEF,
+            "sensLLA[0]": sensLLA[0],
+            "sensLLA[1]": sensLLA[1]
+            }
+        jacobian = jf("AERtoECI", satAERMes[:,count], func_params, delta)
+        
