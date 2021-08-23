@@ -39,12 +39,15 @@ if __name__ == "__main__":
     sensECEF = Transformations.LLAtoECEF(sensLLA, WGS)
     sensECEF.shape = (3,1)
 
+    global stepLength
     simLength = 2000
     stepLength = 60
 
-    TOrbitHours = 2.5
-    omegaSat = 2*pi/(TOrbitHours * 3600)
     satRadius = 7e6
+    global mu
+    mu = 3.9860e14
+    TOrbit = 2*pi * np.sqrt(satRadius**3/mu)
+    omegaSat = 2*pi/TOrbit
 
 
     # ~~~~ Satellite Conversion 
@@ -134,5 +137,9 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]
             }
-        jacobian = jf("AERtoECI", satAERMes[:,count], func_params, delta)
+        jacobian = jf("AERtoECI", np.reshape(satAERMes[:,count], (3, 1)), func_params, delta)
+        
+        covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+        
+        stateTransMatrix = jf("kepler", xState, [], delta)
         

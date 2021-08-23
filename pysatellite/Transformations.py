@@ -73,6 +73,7 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
 
     #Generate matrices for multiplication
     rotationMatrix = [cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0], [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
+    rotationMatrix = np.array(rotationMatrix)
                 
     posECI = np.matmul(rotationMatrix,posECEF)
     return posECI
