@@ -6,6 +6,7 @@ Created on Mon May 17 13:00:45 2021
 """
 
 import numpy as np
+import pysatellite.config as cfg
 
 
 def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):

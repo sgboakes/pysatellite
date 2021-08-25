@@ -9,8 +9,9 @@ import matplotlib.pyplot as plt
 import sys
 import os
 # import Transformations
-from pysatellite import Transformations
-from pysatellite.jacobian_finder import jacobian_finder as jf
+from pysatellite import Transformations, Functions, Filters
+import pysatellite.config as cfg
+#from pysatellite.jacobian_finder import jacobian_finder as jf
 
 if __name__ == "__main__":
 
@@ -39,13 +40,11 @@ if __name__ == "__main__":
     sensECEF = Transformations.LLAtoECEF(sensLLA, WGS)
     sensECEF.shape = (3,1)
 
-    global stepLength
-    simLength = 2000
-    stepLength = 60
+    simLength = cfg.simLength
+    stepLength = cfg.stepLength
 
     satRadius = 7e6
-    global mu
-    mu = 3.9860e14
+    mu = cfg.mu
     TOrbit = 2*pi * np.sqrt(satRadius**3/mu)
     omegaSat = 2*pi/TOrbit
 
@@ -137,9 +136,18 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]
             }
-        jacobian = jf("AERtoECI", np.reshape(satAERMes[:,count], (3, 1)), func_params, delta)
+        jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:,count], (3, 1)), func_params, delta)
         
         covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
         
-        stateTransMatrix = jf("kepler", xState, [], delta)
+        stateTransMatrix = Functions.jacobian_finder("kepler", xState, [], delta)
+        
+        xState, covState = Filters.EKF_ECI(xState, covState, satECIMes[:,count], stateTransMatrix, measureMatrix, covECI, procNoise)
+        
+        totalStates[:,count] = xState
+        err_X_ECI[count] = np.sqrt(np.abs(covState[0,0]))
+        err_Y_ECI[count] = np.sqrt(np.abs(covState[1,1]))
+        err_Z_ECI[count] = np.sqrt(np.abs(covState[2,2]))
+        
+        
         

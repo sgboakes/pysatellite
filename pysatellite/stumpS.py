@@ -14,6 +14,6 @@ def stumpS(z):
     elif z < 0:
         s = (np.sinh(np.sqrt(-z)) - np.sqrt(-z))/(np.sqrt(-z))**3
     else:
-        s - 1/6
+        s = 1/6
         
     return s
