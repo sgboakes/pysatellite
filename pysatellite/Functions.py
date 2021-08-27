@@ -19,6 +19,8 @@ def jacobian_finder(func_name, func_variable, func_params, delta):
         func = getattr(pysatellite.Transformations, func_name)
     elif func_name in dir(pysatellite.Functions):
         func = getattr(pysatellite.Functions, func_name)
+    else:
+        raise Exception('Function not found in jf')
     
     # if hasattr(pysatellite.Transformations, func_name):
     #     func = getattr(pysatellite.Transformations, func_name)
@@ -30,17 +32,19 @@ def jacobian_finder(func_name, func_variable, func_params, delta):
     
     #deriv = np.zeros((1, len(func_variable)))
     
+    jacobian = np.zeros((len(func_variable),len(func_variable)))
     for i in range(num_elements):
+        deriv = []
         delta_mat = np.zeros((len(func_variable),1))
         delta_mat[i] = delta
         if func_params == []:
-            deriv = (func(func_variable+delta_mat) - func(func_variable)) / delta
+            deriv = np.reshape(((func(func_variable+delta_mat) - func(func_variable)) / delta), (num_elements))
         else:
-            deriv = (func(func_variable+delta_mat, *list(func_params.values())[:]) - func(func_variable, *list(func_params.values())[:])) / delta
+            deriv = np.reshape(((func(func_variable+delta_mat, *list(func_params.values())[:]) - func(func_variable, *list(func_params.values())[:])) / delta),(num_elements))
         
-        jacobian = np.zeros((len(func_variable),len(func_variable)))
-        for i in range(num_elements):
-            jacobian[:,i] = deriv[i,:]
+        
+    # for i in range(num_elements):
+            jacobian[:,i] = deriv
             
     return jacobian
 
@@ -51,7 +55,7 @@ def kepler(xState):
     mu = cfg.mu
     
     r0 = np.linalg.norm(xState[0:3])
-    v0 = np.linalg.norm(xState[4:6])
+    v0 = np.linalg.norm(xState[3:6])
     
     pos0 = xState[0:3]
     vel0 = xState[3:6]

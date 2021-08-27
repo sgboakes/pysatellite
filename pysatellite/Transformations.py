@@ -80,7 +80,7 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     return posECI
 
 
-def AERtoLLA(posAER, OriECEF, latOri, lonOri, WGS):
+def AERtoLLA(posAER, OriECEF, latOri, lonOri):
     '''
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
 
@@ -103,6 +103,7 @@ def AERtoLLA(posAER, OriECEF, latOri, lonOri, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
 
     az = posAER[0]
     elev = posAER[1]
@@ -211,7 +212,7 @@ def ECEFtoECI(posECEF, stepLength, stepNum):
     return posECI
 
 
-def ECEFtoLLA(posECEF, WGS):
+def ECEFtoLLA(posECEF):
     '''
     Function for converting ECEF coordinates to latitude/longitude/altitude,
     using a closed formula set.
@@ -228,6 +229,7 @@ def ECEFtoLLA(posECEF, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
 
     # Ellipsoid properties
     a = WGS["SemimajorAxis"]            # Semimajor axis
@@ -401,7 +403,7 @@ def ECItoECEF(posECI, stepLength, stepNum):
     return posECEF
 
 
-def ECItoLLA(posECI, stepLength, stepNum, WGS):
+def ECItoLLA(posECI, stepLength, stepNum):
     '''
     Function for converting ECI coordinates to latitude/longitude/altitude,
     using a closed formula set.
@@ -423,6 +425,7 @@ def ECItoLLA(posECI, stepLength, stepNum, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
     omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
     #omega = 2*pi / (24*60*60)
 
@@ -456,7 +459,7 @@ def ECItoLLA(posECI, stepLength, stepNum, WGS):
     return posLLA
 
 
-def LLAtoAER(posLLA, OriECEF, latOri, lonOri, WGS):
+def LLAtoAER(posLLA, OriECEF, latOri, lonOri):
     '''
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
 
@@ -479,6 +482,7 @@ def LLAtoAER(posLLA, OriECEF, latOri, lonOri, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
 
     #Ellipsoid parameters
     a = WGS["SemimajorAxis"]
@@ -520,7 +524,7 @@ def LLAtoAER(posLLA, OriECEF, latOri, lonOri, WGS):
     posAER = [azimuth], [elevation], [ran]
     return posAER
 
-def LLAtoECEF(posLLA, WGS):
+def LLAtoECEF(posLLA):
     '''
     Function for converting ECEF coordinates to latitude/longitude/altitude.
 
@@ -536,6 +540,7 @@ def LLAtoECEF(posLLA, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
 
     #Ellipsoid parameters
     a = WGS["SemimajorAxis"]
@@ -561,7 +566,7 @@ def LLAtoECEF(posLLA, WGS):
     return posECEF
 
 
-def LLAtoECI(posLLA, stepLength, stepNum, WGS):
+def LLAtoECI(posLLA, stepLength, stepNum):
     '''
     Function for converting latitude/longitude/altitude to ECI coordinates.
 
@@ -582,6 +587,7 @@ def LLAtoECI(posLLA, stepLength, stepNum, WGS):
     '''
     sin = np.sin
     cos = np.cos
+    WGS = cfg.WGS
     omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
 
     #Ellipsoid parameters

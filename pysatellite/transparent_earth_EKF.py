@@ -16,20 +16,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     # ~~~~ Variables
-    
-    WGS = {
-        "LengthUnit" : 'meter',
-        "SemimajorAxis" : 6378137,
-        "SemiminorAxis" : 6.356752314245179e+06,
-        "InverseFlattening" : 2.982572235630000e+02,
-        "Eccentricity" : 0.081819190842621,
-        "Flattening" : 0.0034,
-        "ThirdFlattening" : 0.0017,
-        "MeanRadius" : 6.371008771415059e+06,
-        "SurfaceArea" : 5.100656217240886e+14,
-        "Volume" : 1.083207319801408e+21,
-    }
-    
+       
     sin = np.sin
     cos = np.cos
     pi = np.pi
@@ -37,7 +24,7 @@ if __name__ == "__main__":
     
     sensLat = 28.300697; sensLon = -16.509675; sensAlt = 2390
     sensLLA = [sensLat * pi/180], [sensLon * pi/180], [sensAlt]
-    sensECEF = Transformations.LLAtoECEF(sensLLA, WGS)
+    sensECEF = Transformations.LLAtoECEF(sensLLA)
     sensECEF.shape = (3,1)
 
     simLength = cfg.simLength
@@ -72,7 +59,7 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3,simLength))
     for count in range(simLength):
-        satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,1], stepLength, count, sensECEF, sensLLA[0], sensLLA[1])
+        satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,count], stepLength, count, sensECEF, sensLLA[0], sensLLA[1])
     
     
     # ~~~~ KF Matrices
@@ -94,35 +81,33 @@ if __name__ == "__main__":
     xState[3:6] = v
     
     # Process noise
-    stdAng = 2e0
+    stdAng = 1e-5
     coefA = 0.25 * stepLength**4 * stdAng**2
     coefB = stepLength**2 * stdAng**2
     coefC = 0.5 * stepLength**3 * stdAng**2
     
-    stdRange = 2e1
-    coefA2 = 0.25 * stepLength**4 * stdRange**2
-    coefB2 = stepLength**2 * stdRange**2
-    coefC2 = 0.5 * stepLength**3 * stdRange**2
-    
     procNoise = np.array([[coefA, 0, 0, coefC, 0, 0],
-                          [0, coefA2, 0, 0, coefC2, 0],
+                          [0, coefA, 0, 0, coefC, 0],
                           [0, 0, coefA, 0, 0, coefC],
                           [coefC, 0, 0, coefB, 0, 0],
-                          [0, coefC2, 0, 0, coefB2, 0],
+                          [0, coefC, 0, 0, coefB, 0],
                           [0, 0, coefC, 0, 0, coefB]])
     
     covState = 1e10 * np.identity(6)
     
-    covAER = np.array([[(angMeasDev * 180/2)**2, 0, 0],
-                       [0, (angMeasDev * 180/2)**2, 0],
+    covAER = np.array([[(angMeasDev * 180/pi)**2, 0, 0],
+                       [0, (angMeasDev * 180/pi)**2, 0],
                        [0, 0, rangeMeasDev]])
     
     measureMatrix = np.append(np.identity(3), np.zeros((3,3)), axis=1)
     
     totalStates = np.zeros((6,simLength))
-    err_X_ECI = np.zeros((1,simLength))
-    err_Y_ECI = np.zeros((1,simLength))
-    err_Z_ECI = np.zeros((1,simLength))
+    # err_X_ECI = np.zeros((1,simLength))
+    # err_Y_ECI = np.zeros((1,simLength))
+    # err_Z_ECI = np.zeros((1,simLength))
+    err_X_ECI = []
+    err_Y_ECI = []
+    err_Z_ECI = []
     
     # ~~~~ Using EKF
     
@@ -144,10 +129,29 @@ if __name__ == "__main__":
         
         xState, covState = Filters.EKF_ECI(xState, covState, satECIMes[:,count], stateTransMatrix, measureMatrix, covECI, procNoise)
         
-        totalStates[:,count] = xState
-        err_X_ECI[count] = np.sqrt(np.abs(covState[0,0]))
-        err_Y_ECI[count] = np.sqrt(np.abs(covState[1,1]))
-        err_Z_ECI[count] = np.sqrt(np.abs(covState[2,2]))
+        totalStates[:,count] = np.reshape(xState, (6))
+        err_X_ECI.append(np.sqrt(np.abs(covState[0,0])))
+        err_Y_ECI.append(np.sqrt(np.abs(covState[1,1])))
+        err_Z_ECI.append(np.sqrt(np.abs(covState[2,2])))
         
         
-        
+    plt.figure()
+    plt.plot(satECI[0,:])
+    #plt.plot(satECIMes[0,:], 'r.')
+    plt.plot(totalStates[0,:])
+    plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(satECI[1,:])
+    #plt.plot(satECIMes[1,:], 'r.')
+    plt.plot(totalStates[1,:])
+    plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
+    plt.show()
+    
+    plt.figure()
+    plt.plot(satECI[2,:])
+    #plt.plot(satECIMes[2,:], 'r.')
+    plt.plot(totalStates[2,:])
+    plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
+    plt.show()
