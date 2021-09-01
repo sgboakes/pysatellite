@@ -50,33 +50,33 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     r   = ran * cos(elev)
     yEast  = r * sin(az)
     xNorth = r * cos(az)
-
-    cosPhi = cos(latOri)
-    sinPhi = sin(latOri)
-    cosLambda = cos(lonOri)
-    sinLambda = sin(lonOri)
-
-    zDown = -zUp
-
-    t = cosPhi * -zDown - sinPhi * xNorth
-    dz = sinPhi * -zDown + cosPhi * xNorth
-
-    dx = cosLambda * t - sinLambda * yEast
-    dy = sinLambda * t + cosLambda * yEast
-
-    xECEF = np.float64(OriECEF[0] + dx)
-    yECEF = np.float64(OriECEF[1] + dy)
-    zECEF = np.float64(OriECEF[2] + dz)
-
-    posECEF = [[xECEF], [yECEF], [zECEF]]
+    
+    posNED = np.array([[xNorth, yEast, -zUp]]).T
+    
+    # rotMatrix = [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))], [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))], [cos(latOri), 0, (-sin(lonOri))]]
+    # rotMatrix = np.array(rotMatrix)
+    
+    rotMatrix = np.array(
+        [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))],
+         [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))],
+         [cos(latOri), 0.0, (-sin(lonOri))]],
+        dtype='float64'
+        )
+    
+    posECEFDelta = rotMatrix @ posNED
+    
+    posECEF = posECEFDelta + OriECEF
 
     
-
     #Generate matrices for multiplication
-    rotationMatrix = [cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0], [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
-    rotationMatrix = np.array(rotationMatrix)
+    rotationMatrix = np.array(
+        [[cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0.0],
+         [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0.0],
+         [0.0, 0.0, 1.0]],
+        dtype='float64'
+        )
                 
-    posECI = np.matmul(rotationMatrix,posECEF)
+    posECI = rotationMatrix @ posECEF
     return posECI
 
 
@@ -206,9 +206,14 @@ def ECEFtoECI(posECEF, stepLength, stepNum):
     omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
     #omega = 2*pi / (24*60*60)
 
-    T = [cos(omega*stepLength*stepNum), -(sin(omega*stepLength*stepNum)), 0], [sin(omega*stepLength*stepNum), cos(omega*stepLength*stepNum), 0], [0, 0, 1]
+    T = np.array(
+        [[cos(omega*stepLength*stepNum), -(sin(omega*stepLength*stepNum)), 0.0],
+         [sin(omega*stepLength*stepNum), cos(omega*stepLength*stepNum), 0.0],
+         [0.0, 0.0, 1.0]],
+        dtype='float64'
+        )
     
-    posECI = np.matmul(T, posECEF)
+    posECI = T @ posECEF
     return posECI
 
 
@@ -287,12 +292,17 @@ def ECEFtoNED(posECEF, OriECEF, latOri, lonOri):
 
 
     #Generate matrices for multiplication
-    rotationMatrix = [-(sin(lonOri)), cos(lonOri), 0], [(-(sin(latOri))*cos(lonOri)), (-(sin(latOri))*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]
+    rotationMatrix = np.array(
+        [[-(sin(lonOri)), cos(lonOri), 0.0],
+         [(-(sin(latOri))*cos(lonOri)), (-(sin(latOri))*sin(lonOri)), cos(latOri)],
+         [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]],
+        dtype='float64'
+        )
 
     coordMatrix = [xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]
 
     #Find ENU vector
-    ENU = np.matmul(rotationMatrix, coordMatrix)
+    ENU = rotationMatrix @ coordMatrix
 
     #Convert ENU vector to NED vector
     xNorth = ENU[1]
@@ -333,44 +343,42 @@ def ECItoAER(posECI, stepLength, stepNum, OriECEF, latOri, lonOri):
     #omega = 2*pi / (24*60*60)
     
 
-    rotationMatrix = [cos(stepNum*stepLength*omega), sin(stepNum*stepLength*omega), 0], [-(sin(stepNum*stepLength*omega)), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
+    rotationMatrix = np.array(
+        [[cos(stepNum*stepLength*omega), sin(stepNum*stepLength*omega), 0.0],
+        [-(sin(stepNum*stepLength*omega)), cos(stepNum*stepLength*omega), 0.0],
+        [0.0, 0.0, 1.0]],
+        dtype='float64'
+        )
+    
+    posECI = np.reshape(posECI, (3,1))
 
-    posECEF = np.matmul(rotationMatrix, posECI)
+    #posECEF = np.matmul(rotationMatrix, posECI)
+    posECEF = rotationMatrix @ posECI
 
-    #~~Possible check for rounding errors at posistions close to ECI axes
-    # if abs(posECEF[1]) < 1e-5
-    #     posAER = [NaN NaN NaN]
-    #     return
-    # elseif abs(posECEF[2]) < 1e-5
-    #     posAER = [NaN NaN NaN]
-    #     return
-    # end
-
-
-    xObj = posECEF[0]
-    yObj = posECEF[1]
-    zObj = posECEF[2]
-
-    transformMatrix = [[-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]]
-    transformMatrix = np.array(transformMatrix, dtype=object)
-
-    posECEFMatrix = [[xObj - OriECEF[0]], [yObj - OriECEF[1]], [zObj - OriECEF[2]]]
-    posECEFMatrix = np.reshape(np.array(posECEFMatrix), (3,1))
-
-    #Find ENU vector
-    #ENU = transformMatrix * posECEFMatrix
-    ENU = np.matmul(transformMatrix, posECEFMatrix)
+    transformMatrix = np.array(
+        [[(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)],
+        [(-sin(lonOri)), cos(lonOri), 0.0],
+        [(-cos(latOri)*cos(lonOri)), (-cos(latOri)*sin(lonOri)), (-sin(latOri))]],
+        dtype='float64'
+        )
+    
+    # transformMatrix = [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(-sin(lonOri)), cos(lonOri), 0.0], [(-cos(latOri)*cos(lonOri)), (-cos(latOri)*sin(lonOri)), (-sin(latOri))]
+    
+    posDelta = posECEF - OriECEF
+    
+    # posNED = np.matmul(transformMatrix, posDelta)
+    posNED = transformMatrix @ posDelta
 
     #Convert ENU vector to NED vector
-    xNorth = np.float64(ENU[1])
-    yEast = np.float64(ENU[0])
-    zDown = -np.float64(ENU[2])
+    xNorth = np.float64(posNED[0])
+    yEast = np.float64(posNED[1])
+    zDown = np.float64(posNED[2])
 
 
     r1 = np.hypot(xNorth, yEast)
     ran = np.hypot(r1,zDown)
     elevation = np.arctan2(-zDown,r1)
-    azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.pi)
+    azimuth = np.mod(np.arctan2(yEast, xNorth),2*np.float64(np.pi))
 
     posAER = np.array([[azimuth], [elevation], [ran]])
     return posAER
@@ -398,7 +406,12 @@ def ECItoECEF(posECI, stepLength, stepNum):
     omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
     #omega = 2*pi / (24*60*60)
     
-    T = [cos(omega*stepLength*stepNum), sin(omega*stepLength*stepNum), 0], [-(sin(omega*stepLength*stepNum)), cos(omega*stepLength*stepNum), 0], [0, 0, 1]
+    T = np.array(
+        [[cos(omega*stepLength*stepNum), sin(omega*stepLength*stepNum), 0.0],
+         [-(sin(omega*stepLength*stepNum)), cos(omega*stepLength*stepNum), 0.0],
+         [0.0, 0.0, 1.0]],
+         dtype='float64'
+        )
     posECEF = np.matmul(T, posECI)
     return posECEF
 
@@ -435,9 +448,15 @@ def ECItoLLA(posECI, stepLength, stepNum):
     e = np.sqrt((a**2 - b**2) / a**2)      # Square of (first) eccentricity
     ePrime = np.sqrt((a**2 - b**2) / b**2) # Square of second eccentricity
 
-    rotationMatrix = [cos(stepNum*stepLength*omega), sin(stepNum*stepLength*omega), 0], [-sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
+    rotationMatrix = np.array(
+        [[cos(stepNum*stepLength*omega), sin(stepNum*stepLength*omega), 0.0],
+         [-sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0.0],
+         [0.0, 0.0, 1.0]],
+        dtype='float64'
+        )
 
-    posECEF = np.matmul(rotationMatrix,posECI)
+    posECEF = rotationMatrix @ posECI
+    
     xECEF = posECEF[1]
     yECEF = posECEF[2]
     zECEF = posECEF(3)
@@ -503,12 +522,22 @@ def LLAtoAER(posLLA, OriECEF, latOri, lonOri):
     zECEF = (((b**2/a**2)*NPhi) + alt)*sin(lat)
 
     #Generate matrices for multiplication
-    rotationMatrix = [-sin(lonOri), cos(lonOri), 0], [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)], [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]
+    rotationMatrix = np.array(
+        [[-sin(lonOri), cos(lonOri), 0],
+         [(-sin(latOri)*cos(lonOri)), (-sin(latOri)*sin(lonOri)), cos(latOri)],
+         [(cos(latOri)*cos(lonOri)), (cos(latOri)*sin(lonOri)), sin(latOri)]],
+        dtype='float64'
+        )
 
-    coordMatrix = [xECEF - OriECEF[0]], [yECEF - OriECEF[1]], [zECEF - OriECEF[2]]
+    coordMatrix = np.array(
+        [[xECEF - OriECEF[0]],
+         [yECEF - OriECEF[1]],
+         [zECEF - OriECEF[2]]],
+        dtype='float64'
+        )
 
     #Find ENU vector
-    ENU = rotationMatrix * coordMatrix
+    ENU = rotationMatrix @ coordMatrix
 
     #Convert ENU vector to NED vector
     xNorth = ENU[1]
@@ -611,9 +640,15 @@ def LLAtoECI(posLLA, stepLength, stepNum):
     posECEF = [xECEF], [yECEF], [zECEF]
 
     #Generate matrices for multiplication
-    rotationMatrix = [cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0], [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0], [0, 0, 1 ]
+    rotationMatrix = np.array(
+        [[cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0.0],
+         [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0.0],
+         [0.0, 0.0, 1.0]],
+        dtype='float64'
+        )
                 
-    posECI = np.matmul(rotationMatrix,posECEF)
+    posECI = rotationMatrix @ posECEF
+    
     return posECI
 
 
