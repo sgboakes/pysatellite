@@ -64,7 +64,7 @@ def kepler(xState):
     vr0 = np.dot(np.reshape(pos0, 3), np.reshape(vel0, 3)) / r0
     
     # Reciprocal of the semimajor axis (from the energy equation)
-    alpha = 2 / r0 - v0**2/mu
+    alpha = 2.0 / r0 - v0**2/mu
     
     
     error = 1e-8
@@ -109,7 +109,7 @@ def kepler(xState):
 
 def stumpC(z):
     if z > 0:
-        c = (1-np.cos(np.sqrt(z)))/z
+        c = (1.0-np.cos(np.sqrt(z)))/z
     elif z < 0:
         c = (np.cosh(np.sqrt(-z)) - 1)/(-z)
     else:

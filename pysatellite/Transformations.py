@@ -51,7 +51,7 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     yEast  = r * sin(az)
     xNorth = r * cos(az)
     
-    posNED = np.array([[xNorth, yEast, -zUp]]).T
+    posNED = np.array([[xNorth, yEast, -zUp]],dtype='float64').T
     
     # rotMatrix = [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))], [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))], [cos(latOri), 0, (-sin(lonOri))]]
     # rotMatrix = np.array(rotMatrix)
@@ -59,7 +59,7 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     rotMatrix = np.array(
         [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))],
          [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))],
-         [cos(latOri), 0.0, (-sin(lonOri))]],
+         [cos(latOri), 0.0, (-sin(latOri))]],
         dtype='float64'
         )
     

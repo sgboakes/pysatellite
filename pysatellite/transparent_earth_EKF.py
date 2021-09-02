@@ -35,13 +35,15 @@ if __name__ == "__main__":
     
     satECI = np.zeros((3,simLength))
     for count in range(simLength):
-        satECI[:,count] = [satRadius*sin(omegaSat*(count+1)*stepLength),
-                           0,
-                           satRadius*cos(omegaSat*(count+1)*stepLength)]
+        satECI[:,count:count+1] = np.array([[satRadius*sin(omegaSat*(count+1)*stepLength)],
+                                    [0.0],
+                                    [satRadius*cos(omegaSat*(count+1)*stepLength)]],
+                                   dtype='float64'
+                                   )
         
     satAER = np.zeros((3,simLength))
     for count in range(simLength):
-        satAER[:,[count]] = Transformations.ECItoAER(satECI[:,count], stepLength, count+1, sensECEF, sensLLA[0], sensLLA[1])
+        satAER[:,count:count+1] = Transformations.ECItoAER(satECI[:,count], stepLength, count+1, sensECEF, sensLLA[0], sensLLA[1])
         
         
     angMeasDev = np.float64(1e-6)
@@ -70,7 +72,8 @@ if __name__ == "__main__":
                        [satRadius],
                        [0.0],
                        [0.0],
-                       [0.0]])
+                       [0.0]],
+                      dtype='float64')
     
     G = np.float64(6.67e-11)
     m_e = np.float64(5.972e24)
@@ -80,7 +83,7 @@ if __name__ == "__main__":
     xState[3:6] = v
     
     # Process noise
-    stdAng = np.float64(1e5)
+    stdAng = np.float64(1e-5)
     coefA = np.float64(0.25 * stepLength**4.0 * stdAng**2.0)
     coefB = np.float64(stepLength**2.0 * stdAng**2.0)
     coefC = np.float64(0.5 * stepLength**3.0 * stdAng**2.0)
@@ -98,7 +101,7 @@ if __name__ == "__main__":
     
     covAER = np.array([[(angMeasDev * 180/pi)**2, 0, 0],
                        [0, (angMeasDev * 180/pi)**2, 0],
-                       [0, 0, rangeMeasDev]],
+                       [0, 0, rangeMeasDev**2]],
                       dtype='float64'
                       )
     
@@ -106,12 +109,12 @@ if __name__ == "__main__":
     
     totalStates = np.zeros((6,simLength))
     diffStates = np.zeros((3,simLength))
-    # err_X_ECI = np.zeros((1,simLength))
-    # err_Y_ECI = np.zeros((1,simLength))
-    # err_Z_ECI = np.zeros((1,simLength))
-    err_X_ECI = []
-    err_Y_ECI = []
-    err_Z_ECI = []
+    err_X_ECI = np.zeros((1,simLength),dtype='float64')
+    err_Y_ECI = np.zeros((1,simLength),dtype='float64')
+    err_Z_ECI = np.zeros((1,simLength),dtype='float64')
+    # err_X_ECI = []
+    # err_Y_ECI = []
+    # err_Z_ECI = []
     
     # ~~~~ Using EKF
     
@@ -120,23 +123,24 @@ if __name__ == "__main__":
         #Func params
         func_params = {
             "stepLength": stepLength,
-            "count": count,
+            "count": count+1,
             "sensECEF": sensECEF,
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]
             }
         jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:,count], (3, 1)), func_params, delta)
         
-        covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+        # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+        covECI = jacobian @ covAER @ jacobian.T
         
         stateTransMatrix = Functions.jacobian_finder("kepler", xState, [], delta)
         
         xState, covState = Filters.EKF_ECI(xState, covState, satECIMes[:,count], stateTransMatrix, measureMatrix, covECI, procNoise)
         
         totalStates[:,count] = np.reshape(xState, (6))
-        err_X_ECI.append(np.sqrt(np.abs(covState[0,0])))
-        err_Y_ECI.append(np.sqrt(np.abs(covState[1,1])))
-        err_Z_ECI.append(np.sqrt(np.abs(covState[2,2])))
+        err_X_ECI[0,count] = (np.sqrt(np.abs(covState[0,0])))
+        err_Y_ECI[0,count] = (np.sqrt(np.abs(covState[1,1])))
+        err_Z_ECI[0,count] = (np.sqrt(np.abs(covState[2,2])))
         diffStates[:,count] = totalStates[0:3,count] - satECIMes[:,count]
         
         
@@ -166,19 +170,19 @@ if __name__ == "__main__":
     
     # ~~~~~ Error Plots
     plt.figure()
-    plt.plot(err_X_ECI)
+    plt.plot(err_X_ECI[0,:])
     plt.plot(np.abs(diffStates[0,:]))
     plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
     plt.show()
     
     plt.figure()
-    plt.plot(err_Y_ECI)
+    plt.plot(err_Y_ECI[0,:])
     plt.plot(np.abs(diffStates[1,:]))
     plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
     plt.show()
     
     plt.figure()
-    plt.plot(err_Z_ECI)
+    plt.plot(err_Z_ECI[0,:])
     plt.plot(np.abs(diffStates[2,:]))
     plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
     plt.show()

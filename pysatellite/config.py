@@ -16,7 +16,7 @@ mu: Product of gravitational constant G and mass M, in m^3/s^2
 import numpy as np
 
 stepLength = 30
-simLength = 2000
+simLength = 20000
 mu = np.float64(3.9860e14)
 
 WGS = {

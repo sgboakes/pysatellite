@@ -37,17 +37,22 @@ def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, meas
     
     # Prediction
     xState = pysatellite.Functions.kepler(xState)
-    covState = np.matmul(np.matmul(stateTransMatrix, covState), stateTransMatrix.T) + processNoise
+    # covState = np.matmul(np.matmul(stateTransMatrix, covState), stateTransMatrix.T) + processNoise
+    covState = stateTransMatrix @ covState @ stateTransMatrix.T + processNoise
     
     # If no measurement made, can't calculate K
     if (not np.any(xState)) or (np.isnan(xState).all()) :
         return xState, covState
     
     # Measurement-Update
-    updatedMeasurement = np.matmul(measureMatrix, xState)
-    K = np.dot(np.dot(covState, measureMatrix.T), (np.linalg.inv(np.dot(np.dot(measureMatrix, covState), measureMatrix.T) + measurementNoise)))
+    # updatedMeasurement = np.matmul(measureMatrix, xState)
+    updatedMeasurement = measureMatrix @ xState
+    # K = np.dot(np.dot(covState, measureMatrix.T), (np.linalg.inv(np.dot(np.dot(measureMatrix, covState), measureMatrix.T) + measurementNoise)))
+    K = covState @ measureMatrix.T @ np.linalg.inv(measureMatrix @ covState @ measureMatrix.T + measurementNoise)
     
-    covState = np.eye(len(covState)) - np.matmul(np.matmul(K, measureMatrix), covState)
-    xState = xState + np.matmul(K, np.reshape(measurement,(3,1)) - updatedMeasurement)
+    # covState = np.eye(len(covState)) - np.matmul(np.matmul(K, measureMatrix), covState)
+    covState = np.eye(len(covState)) - K @ measureMatrix @ covState
+    # xState = xState + np.matmul(K, np.reshape(measurement,(3,1)) - updatedMeasurement)
+    xState = xState + K @ (np.reshape(measurement, (3,1)) - updatedMeasurement)
     
     return xState, covState
