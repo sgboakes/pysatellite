@@ -5,6 +5,7 @@ Created 10/06/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
+import pandas as pd
 from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
 
@@ -18,7 +19,8 @@ if __name__ == "__main__":
     
     
     sensLat = np.float64(28.300697); sensLon = np.float64(-16.509675); sensAlt = np.float64(2390)
-    sensLLA = [sensLat * pi/180], [sensLon * pi/180], [sensAlt]
+    sensLLA = np.array([[sensLat * pi/180], [sensLon * pi/180], [sensAlt]], dtype='float64')
+    sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
     sensECEF = Transformations.LLAtoECEF(sensLLA)
     sensECEF.shape = (3,1)
 
@@ -36,10 +38,10 @@ if __name__ == "__main__":
     satECI = np.zeros((3,simLength))
     for count in range(simLength):
         satECI[:,count:count+1] = np.array([[satRadius*sin(omegaSat*(count+1)*stepLength)],
-                                    [0.0],
-                                    [satRadius*cos(omegaSat*(count+1)*stepLength)]],
-                                   dtype='float64'
-                                   )
+                                            [0.0],
+                                            [satRadius*cos(omegaSat*(count+1)*stepLength)]],
+                                           dtype='float64'
+                                           )
         
     satAER = np.zeros((3,simLength))
     for count in range(simLength):
@@ -61,6 +63,14 @@ if __name__ == "__main__":
     satECIMes = np.zeros((3,simLength))
     for count in range(simLength):
         satECIMes[:,[count]] = Transformations.AERtoECI(satAERMes[:,count], stepLength, count+1, sensECEF, sensLLA[0], sensLLA[1])
+    
+    
+    # ~~~~ Temp ECI measurements from MATLAB
+    
+    satECIMes = pd.read_csv('ECI_mes.txt', delimiter=' ').to_numpy(dtype='float64')
+   # satECIMes.to_numpy(dtype='float64')
+    satECIMes = satECIMes.T
+   # np.reshape(satECIMes, (3,simLength))
     
     
     # ~~~~ KF Matrices
