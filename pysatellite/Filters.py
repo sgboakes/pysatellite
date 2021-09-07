@@ -51,7 +51,7 @@ def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, meas
     K = covState @ measureMatrix.T @ np.linalg.inv(measureMatrix @ covState @ measureMatrix.T + measurementNoise)
     
     # covState = np.eye(len(covState)) - np.matmul(np.matmul(K, measureMatrix), covState)
-    covState = np.eye(len(covState)) - K @ measureMatrix @ covState
+    covState = (np.eye(len(covState)) - K @ measureMatrix) @ covState
     # xState = xState + np.matmul(K, np.reshape(measurement,(3,1)) - updatedMeasurement)
     xState = xState + K @ (np.reshape(measurement, (3,1)) - updatedMeasurement)
     

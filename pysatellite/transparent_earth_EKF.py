@@ -5,14 +5,16 @@ Created 10/06/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
+import time
 from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
 
 if __name__ == "__main__":
 
+    
+    start_nonKF = time.time()
     # ~~~~ Variables
-       
+    
     sin = np.sin
     cos = np.cos
     pi = np.float64(np.pi)
@@ -67,10 +69,10 @@ if __name__ == "__main__":
     
     # ~~~~ Temp ECI measurements from MATLAB
     
-    satECIMes = pd.read_csv('ECI_mes.txt', delimiter=' ').to_numpy(dtype='float64')
-   # satECIMes.to_numpy(dtype='float64')
-    satECIMes = satECIMes.T
-   # np.reshape(satECIMes, (3,simLength))
+   #  satECIMes = pd.read_csv('ECI_mes.txt', delimiter=' ').to_numpy(dtype='float64')
+   # # satECIMes.to_numpy(dtype='float64')
+   #  satECIMes = satECIMes.T
+   # # np.reshape(satECIMes, (3,simLength))
     
     
     # ~~~~ KF Matrices
@@ -87,10 +89,8 @@ if __name__ == "__main__":
     
     G = np.float64(6.67e-11)
     m_e = np.float64(5.972e24)
-    m_s = np.float64(20)
     
-    v = np.sqrt((G*m_e) / np.linalg.norm(xState[0:3])) * np.array([[1.0],[0.0],[0.0]])
-    xState[3:6] = v
+    xState[3:6] = np.sqrt((G*m_e) / np.linalg.norm(xState[0:3])) * np.array([[1.0],[0.0],[0.0]],dtype='float64')
     
     # Process noise
     stdAng = np.float64(1e-5)
@@ -117,8 +117,8 @@ if __name__ == "__main__":
     
     measureMatrix = np.append(np.identity(3), np.zeros((3,3)), axis=1)
     
-    totalStates = np.zeros((6,simLength))
-    diffStates = np.zeros((3,simLength))
+    totalStates = np.zeros((6,simLength), dtype='float64')
+    diffStates = np.zeros((3,simLength), dtype='float64')
     err_X_ECI = np.zeros((1,simLength),dtype='float64')
     err_Y_ECI = np.zeros((1,simLength),dtype='float64')
     err_Z_ECI = np.zeros((1,simLength),dtype='float64')
@@ -126,7 +126,12 @@ if __name__ == "__main__":
     # err_Y_ECI = []
     # err_Z_ECI = []
     
+    end_nonKF = time.time()
+    nonKFtime = end_nonKF - start_nonKF
+    
     # ~~~~ Using EKF
+    
+    start_KF = time.time()
     
     delta = np.float64(1e-6)
     for count in range(simLength):
@@ -153,50 +158,59 @@ if __name__ == "__main__":
         err_Z_ECI[0,count] = (np.sqrt(np.abs(covState[2,2])))
         diffStates[:,count] = totalStates[0:3,count] - satECIMes[:,count]
         
+    end_KF = time.time()
+    KFtime = end_KF - start_KF
         
     # ~~~~~ Plots
+    start_plots = time.time()
     
-    plt.figure()
-    plt.plot(satECI[0,:])
-    #plt.plot(satECIMes[0,:], 'r.')
-    plt.plot(totalStates[0,:])
-    plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
-    plt.show()
+    # plt.figure()
+    # plt.plot(satECI[0,:])
+    # #plt.plot(satECIMes[0,:], 'r.')
+    # plt.plot(totalStates[0,:])
+    # plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
+    # plt.show()
     
-    plt.figure()
-    plt.plot(satECI[1,:])
-    #plt.plot(satECIMes[1,:], 'r.')
-    plt.plot(totalStates[1,:])
-    plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
-    plt.show()
+    # plt.figure()
+    # plt.plot(satECI[1,:])
+    # #plt.plot(satECIMes[1,:], 'r.')
+    # plt.plot(totalStates[1,:])
+    # plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
+    # plt.show()
     
-    plt.figure()
-    plt.plot(satECI[2,:])
-    #plt.plot(satECIMes[2,:], 'r.')
-    plt.plot(totalStates[2,:])
-    plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
-    plt.show()
+    # plt.figure()
+    # plt.plot(satECI[2,:])
+    # #plt.plot(satECIMes[2,:], 'r.')
+    # plt.plot(totalStates[2,:])
+    # plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
+    # plt.show()
     
     
-    # ~~~~~ Error Plots
-    plt.figure()
-    plt.plot(err_X_ECI[0,:])
-    plt.plot(np.abs(diffStates[0,:]))
-    plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
-    plt.show()
+    # # ~~~~~ Error Plots
+    # plt.figure()
+    # plt.plot(err_X_ECI[0,:])
+    # plt.plot(np.abs(diffStates[0,:]))
+    # plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
+    # plt.show()
     
-    plt.figure()
-    plt.plot(err_Y_ECI[0,:])
-    plt.plot(np.abs(diffStates[1,:]))
-    plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
-    plt.show()
+    # plt.figure()
+    # plt.plot(err_Y_ECI[0,:])
+    # plt.plot(np.abs(diffStates[1,:]))
+    # plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
+    # plt.show()
     
-    plt.figure()
-    plt.plot(err_Z_ECI[0,:])
-    plt.plot(np.abs(diffStates[2,:]))
-    plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
-    plt.show()
+    # plt.figure()
+    # plt.plot(err_Z_ECI[0,:])
+    # plt.plot(np.abs(diffStates[2,:]))
+    # plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
+    # plt.show()
     
+    end_plots = time.time()
+    plotstime = end_plots - start_plots
+    
+    print("Non KF Time: %f",nonKFtime)
+    print('KF Time: %f',KFtime)
+    print('Plot Time: %f',plotstime)
     
     
     

@@ -38,13 +38,13 @@ def jacobian_finder(func_name, func_variable, func_params, delta):
         delta_mat = np.zeros((len(func_variable),1))
         delta_mat[i] = delta
         if func_params == []:
-            deriv = np.reshape(((func(func_variable+delta_mat) - func(func_variable)) / delta), (num_elements))
+            deriv = np.reshape(((func(func_variable+delta_mat) - func(func_variable)) / delta), (num_elements,1))
         else:
-            deriv = np.reshape(((func(func_variable+delta_mat, *list(func_params.values())[:]) - func(func_variable, *list(func_params.values())[:])) / delta),(num_elements))
+            deriv = np.reshape(((func(func_variable+delta_mat, *list(func_params.values())[:]) - func(func_variable, *list(func_params.values())[:])) / delta),(num_elements,1))
         
         
     # for i in range(num_elements):
-            jacobian[:,i] = deriv
+        jacobian[:,i:i+1] = deriv
             
     return jacobian
 
