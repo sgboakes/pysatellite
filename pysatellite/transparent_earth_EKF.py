@@ -164,27 +164,25 @@ if __name__ == "__main__":
     # ~~~~~ Plots
     start_plots = time.time()
     
-    plt.figure()
-    plt.plot(satECI[0,:])
-    #plt.plot(satECIMes[0,:], 'r.')
-    plt.plot(totalStates[0,:])
-    plt.xlabel('Time Step'), plt.ylabel('$X_{ECI}$, metres')
-    plt.show()
+    fig, (ax1, ax2, ax3) = plt.subplots(3)
+    axs = [ax1,ax2,ax3]
+    fig.suptitle('Satellite Position')
+    ax1.plot(satECI[0,:])
+    #ax1.plot(satECIMes[0,:], 'r.')
+    ax1.plot(totalStates[0,:])
+    ax1.set(ylabel='$X_{ECI}$, metres')
     
-    plt.figure()
-    plt.plot(satECI[1,:])
-    #plt.plot(satECIMes[1,:], 'r.')
-    plt.plot(totalStates[1,:])
-    plt.xlabel('Time Step'), plt.ylabel('$Y_{ECI}$, metres')
-    plt.show()
+    ax2.plot(satECI[1,:])
+    #ax2.plot(satECIMes[1,:], 'r.')
+    ax2.plot(totalStates[1,:])
+    ax2.set(ylabel='$Y_{ECI}$, metres')
     
-    plt.figure()
-    plt.plot(satECI[2,:])
-    #plt.plot(satECIMes[2,:], 'r.')
-    plt.plot(totalStates[2,:])
-    plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
-    plt.show()
+    ax3.plot(satECI[2,:])
+    #ax3.plot(satECIMes[2,:], 'r.')
+    ax3.plot(totalStates[2,:])
+    ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
     
+    plt.show()
     
     # ~~~~~ Error Plots
     plt.figure()
