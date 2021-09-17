@@ -12,6 +12,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     
+    
     start_nonKF = time.time()
     # ~~~~ Variables
     
@@ -203,12 +204,20 @@ if __name__ == "__main__":
     plt.xlabel('Time Step'), plt.ylabel('$Z_{ECI}$, metres')
     plt.show()
     
+    fig = plt.figure()
+    ax = fig.add_subplot(111, projection='3d')
+    ax.plot(satECI[0,:], satECI[1,:], satECI[2,:])
+    ax.plot(totalStates[0,:], totalStates[1,:], totalStates[2,:])
+    
     end_plots = time.time()
     plotstime = end_plots - start_plots
     
-    print("Non KF Time: %f",nonKFtime)
-    print('KF Time: %f',KFtime)
-    print('Plot Time: %f',plotstime)
+    total_time = nonKFtime + KFtime + plotstime
+    
+    print("Non KF Time: {:.4f}".format(nonKFtime))
+    print('KF Time: {:.4f}'.format(KFtime))
+    print('Plot Time: {:.4f}'.format(plotstime))
+    print('Total Time: {:.4f}'.format(total_time))
     
     
     

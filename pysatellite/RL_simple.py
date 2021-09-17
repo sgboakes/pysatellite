@@ -39,7 +39,8 @@ if __name__ == "__main__":
                                             [y[count % num_points]]],
                                            dtype='float64'
                                            )
-        
+    
+    
     # Need framework for agent that looks at points at each time step
     # Initial reward is 0
     reward = 0
@@ -51,3 +52,9 @@ if __name__ == "__main__":
             y_look = y[x.index(x_look)]
             if satPos[0,i] == x_look and satPos[1,i] == y_look:
                 reward += 1
+                
+    
+    
+                
+                
+    print("Reward gained: %f ",reward)
