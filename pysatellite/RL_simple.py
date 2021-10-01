@@ -41,20 +41,4 @@ if __name__ == "__main__":
                                            )
     
     
-    # Need framework for agent that looks at points at each time step
-    # Initial reward is 0
-    reward = 0
-    # Iterate over time steps
-    for i in range(simLength):
-        # Initially, look at random point
-        if i == 0:
-            x_look = random.choice(x)
-            y_look = y[x.index(x_look)]
-            if satPos[0,i] == x_look and satPos[1,i] == y_look:
-                reward += 1
-                
     
-    
-                
-                
-    print("Reward gained: %f ",reward)
