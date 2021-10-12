@@ -41,7 +41,7 @@ def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, meas
     covState = stateTransMatrix @ covState @ stateTransMatrix.T + processNoise
     
     # If no measurement made, can't calculate K
-    if (not np.any(xState)) or (np.isnan(xState).all()) :
+    if (not np.any(measurement)) or (np.isnan(measurement).all()) :
         return xState, covState
     
     # Measurement-Update

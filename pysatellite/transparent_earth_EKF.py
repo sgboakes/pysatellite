@@ -144,6 +144,7 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]
             }
+        
         jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:,count], (3, 1)), func_params, delta)
         
         # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
