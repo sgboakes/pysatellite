@@ -4,4 +4,5 @@
 *.pyc
 *.ipynb_checkpoints
 *.spyproject
+.idea
 
