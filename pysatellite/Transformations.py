@@ -10,7 +10,7 @@ import pysatellite.config as cfg
 
 
 def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
-    '''
+    """
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
@@ -29,8 +29,8 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
     posLLA: A 3x1 vector containing the latitude, longitude, and altitude
         positions in radians and metres, respectively.
-    '''
-    omega = np.float64(7.2921158553e-5) #Earth rotation rate (radians/sec) ~SIDEREAL
+    """
+    omega = np.float64(7.2921158553e-5)  # Earth rotation rate (radians/sec) ~SIDEREAL
     sin = np.sin
     cos = np.cos
 
@@ -38,43 +38,28 @@ def AERtoECI(posAER, stepLength, stepNum, OriECEF, latOri, lonOri):
     elev = posAER[1]
     ran = posAER[2]
 
-    # if abs(az-2*pi) < 1e-5 || abs(az-pi) < 1e-5 || abs(pi) < 1e-5
-    #     posLLA = [NaN NaN NaN]
-    #     return
-    # elseif abs(elev-2*pi) < 1e-5 || abs(elev-pi) < 1e-5 || abs(pi) < 1e-5
-    #     posLLA = [NaN NaN NaN]
-    #     return
-    # end
-
     zUp = ran * sin(elev)
-    r   = ran * cos(elev)
+    r = ran * cos(elev)
     yEast  = r * sin(az)
     xNorth = r * cos(az)
     
-    posNED = np.array([[xNorth, yEast, -zUp]],dtype='float64').T
+    posNED = np.array([[xNorth, yEast, -zUp]], dtype='float64').T
     
     # rotMatrix = [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))], [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))], [cos(latOri), 0, (-sin(lonOri))]]
     # rotMatrix = np.array(rotMatrix)
     
-    rotMatrix = np.array(
-        [[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))],
-         [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))],
-         [cos(latOri), 0.0, (-sin(latOri))]],
-        dtype='float64'
-        )
+    rotMatrix = np.array([[(-sin(latOri)*cos(lonOri)), -sin(lonOri), (-cos(latOri) * cos(lonOri))],
+                          [(-sin(latOri) * sin(lonOri)), cos(lonOri), (-cos(latOri) * sin(lonOri))],
+                          [cos(latOri), 0.0, (-sin(latOri))]], dtype='float64')
     
     posECEFDelta = rotMatrix @ posNED
     
     posECEF = posECEFDelta + OriECEF
 
-    
-    #Generate matrices for multiplication
-    rotationMatrix = np.array(
-        [[cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0.0],
-         [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0.0],
-         [0.0, 0.0, 1.0]],
-        dtype='float64'
-        )
+    # Generate matrices for multiplication
+    rotationMatrix = np.array([[cos(stepNum*stepLength*omega), -sin(stepNum*stepLength*omega), 0.0],
+                               [sin(stepNum*stepLength*omega), cos(stepNum*stepLength*omega), 0.0],
+                               [0.0, 0.0, 1.0]], dtype='float64')
                 
     posECI = rotationMatrix @ posECEF
     return posECI

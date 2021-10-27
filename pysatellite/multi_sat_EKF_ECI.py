@@ -9,9 +9,11 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
+import pandas as pd
 
 if __name__ == "__main__":
 
+    plt.close('all')
     # ~~~~ Variables
 
     sin = np.sin
@@ -98,8 +100,15 @@ if __name__ == "__main__":
     for i in range(num_sats):
         c = chr(i + 97)
         for j in range(simLength):
-            satECIMes[c][:, j:j + 1] = Transformations.AERtoECI(satAERMes[c][:, j], stepLength, j, sensECEF, sensLLA[0],
+            satECIMes[c][:, j:j + 1] = Transformations.AERtoECI(satAERMes[c][:, j], stepLength, j+1, sensECEF, sensLLA[0],
                                                                 sensLLA[1])
+
+    # ~~~~ Temp ECI measurements from MATLAB
+
+    # satECIMes['a'] = pd.read_csv('ECI_mes.txt', delimiter=' ').to_numpy(dtype='float64')
+    # #satECIMes.to_numpy(dtype='float64')
+    # satECIMes['a'] = satECIMes['a'].T
+    # np.reshape(satECIMes['a'], (3, simLength))
 
     satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
     for i in range(num_sats):
@@ -123,8 +132,7 @@ if __name__ == "__main__":
                           [coefC, 0, 0, coefB, 0, 0],
                           [0, coefC, 0, 0, coefB, 0],
                           [0, 0, coefC, 0, 0, coefB]],
-                         dtype='float64'
-                         )
+                         dtype='float64')
 
     covState = {chr(i + 97): np.zeros((6, 6)) for i in range(num_sats)}
     for i in range(num_sats):
@@ -193,7 +201,7 @@ if __name__ == "__main__":
         c = chr(i + 97)
         fig, (ax1, ax2, ax3) = plt.subplots(3)
         axs = [ax1, ax2, ax3]
-        fig.suptitle('Satellite Position')
+        fig.suptitle('Satellite {sat}'.format(sat=c))
         ax1.plot(satECI[c][0, :])
         # ax1.plot(satECIMes[c][0,:], 'r.')
         ax1.plot(totalStates[c][0, :])
@@ -217,7 +225,7 @@ if __name__ == "__main__":
         c = chr(i + 97)
         fig, (ax1, ax2, ax3) = plt.subplots(3)
         axs = [ax1, ax2, ax3]
-        fig.suptitle('Errors')
+        fig.suptitle('Satellite {sat} Errors'.format(sat=c))
         ax1.plot(err_X_ECI[c])
         ax1.plot(np.abs(diffState[c][0, :]))
         ax1.set(ylabel='$X_{ECI}$, metres')
@@ -231,5 +239,3 @@ if __name__ == "__main__":
         ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
 
         plt.show()
-
-    print("done")

@@ -8,6 +8,7 @@ Created on Wed Aug 25 17:04:41 2021
 import pysatellite
 import numpy as np
 
+
 def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, measurementNoise, processNoise):
     '''
     Variable Information
@@ -41,7 +42,7 @@ def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, meas
     covState = stateTransMatrix @ covState @ stateTransMatrix.T + processNoise
     
     # If no measurement made, can't calculate K
-    if (not np.any(measurement)) or (np.isnan(measurement).all()) :
+    if (not np.any(measurement)) or (np.isnan(measurement).all()):
         return xState, covState
     
     # Measurement-Update
@@ -53,6 +54,6 @@ def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, meas
     # covState = np.eye(len(covState)) - np.matmul(np.matmul(K, measureMatrix), covState)
     covState = (np.eye(len(covState)) - K @ measureMatrix) @ covState
     # xState = xState + np.matmul(K, np.reshape(measurement,(3,1)) - updatedMeasurement)
-    xState = xState + K @ (np.reshape(measurement, (3,1)) - updatedMeasurement)
+    xState = xState + K @ (np.reshape(measurement, (3, 1)) - updatedMeasurement)
     
     return xState, covState
