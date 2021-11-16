@@ -1,5 +1,10 @@
-Example Package
+pysatellite
 
-This is a simple example package. You can use
-[Github-flavored Markdown](https://guides.github.com/features/mastering-markdown/)
-to write your content.
+pysatellite is a python package for state estimation, developed by Benedict Oakes for PhD studies.
+
+Required packages:
+numpy,
+matplotlib,
+pandas
+
+
