@@ -12,8 +12,7 @@ from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
 
 if __name__ == "__main__":
-    
-    
+
     sin = np.sin
     cos = np.cos
     pi = np.float64(np.pi)
@@ -33,12 +32,11 @@ if __name__ == "__main__":
     y = satRadius * cos(t)
     
     # Get sat pos at each time step
-    satPos = np.zeros((2,simLength))
+    satPos = np.zeros((2, simLength))
     for count in range(simLength):
-        satPos[:,count:count+1] = np.array([[x[count % num_points]],
+        satPos[:, count:count+1] = np.array([[x[count % num_points]],
                                             [y[count % num_points]]],
-                                           dtype='float64'
-                                           )
+                                            dtype='float64')
     
     
     

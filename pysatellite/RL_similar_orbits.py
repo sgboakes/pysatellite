@@ -10,7 +10,6 @@ import matplotlib.pyplot as plt
 from mpl_toolkits import mplot3d
 from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
-import pandas as pd
 
 if __name__ == "__main__":
 
@@ -101,8 +100,8 @@ if __name__ == "__main__":
     for i in range(num_sats):
         c = chr(i + 97)
         for j in range(simLength):
-            satECIMes[c][:, j:j + 1] = Transformations.AERtoECI(satAERMes[c][:, j], stepLength, j+1, sensECEF, sensLLA[0],
-                                                                sensLLA[1])
+            satECIMes[c][:, j:j + 1] = Transformations.AERtoECI(satAERMes[c][:, j], stepLength, j+1, sensECEF,
+                                                                sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB
 

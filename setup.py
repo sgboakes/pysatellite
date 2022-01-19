@@ -5,5 +5,13 @@ Setup script for pysatellite using PBR package.
 
 from setuptools import setup
 
-#setup(setup_requires=["pbr"],pbr=True)
-setup(pbr=True)
+# setup(setup_requires=["pbr"],pbr=True)
+setup(name='pysatellite',
+      maintainer='Benedict Oakes',
+      maintainer_email='sgboakes@liverpool.ac.uk',
+      url='https://github.com/sgboakes/pysatellite',
+      install_requires=[
+          'numpy', 'matplotlib', 'pandas',
+      ],
+      pbr=True,
+      )
