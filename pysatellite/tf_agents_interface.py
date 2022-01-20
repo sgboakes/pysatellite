@@ -32,7 +32,7 @@ if __name__ == "__main__":
 
     mu = cfg.mu
 
-    trans_earth = True
+    trans_earth = False
 
     # ~~~~ Satellite Conversion
 
