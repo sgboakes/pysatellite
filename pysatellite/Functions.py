@@ -78,9 +78,9 @@ def kepler(x_state):
         ratio = f/dfdx
         x -= ratio
         
-    if n > n_max:
-        print('\n No. Iterations of Kepler''s equation = %g', n)
-        print('\n F/dFdx = %g', f/dfdx)
+    # if n > n_max:
+    #     print('\n No. Iterations of Kepler''s equation = %g', n)
+    #     print('\n F/dFdx = %g', f/dfdx)
         
     z = alpha*x**2
     
