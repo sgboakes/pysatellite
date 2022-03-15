@@ -9,52 +9,46 @@ from pysatellite import Functions
 import numpy as np
 
 
-def EKF_ECI(xState, covState, measurement, stateTransMatrix, measureMatrix, measureNoise, processNoise):
+def ekf_eci(x_state, cov_state, measurement, state_trans_matrix, measure_matrix, measure_noise, process_noise):
     """
     Variable Information
     Function for using Extended Kalman Filter
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    xState: An nx1 vector containing the system state.
+    x_state: An nx1 vector containing the system state.
 
-    covState: An nxn matrix containing the state covariance.
+    cov_state: An nxn matrix containing the state covariance.
 
     measurement: An mx1 vector containing the new measurement.
 
-    stateTransMatrix: An nxn matrix that transforms the state vector forward.
+    state_trans_matrix: An nxn matrix that transforms the state vector forward.
 
-    measureMatrix: An mxn matrix that predicts the measurement forward.
+    measure_matrix: An mxn matrix that predicts the measurement forward.
 
-    measureNoise : An mxn matrix containing the measurement noise.
+    measure_noise : An mxn matrix containing the measurement noise.
 
-    processNoise: An nxn matrix containing the process noise.
+    process_noise: An nxn matrix containing the process noise.
 
     stepLength: The length of each time step in seconds.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    xState: The new state vector.
+    x_state: The new state vector.
 
-    covState: The new covariance matrix.
+    cov_state: The new covariance matrix.
     """
     
     # Prediction
-    xState = Functions.kepler(xState)
-    # covState = np.matmul(np.matmul(stateTransMatrix, covState), stateTransMatrix.T) + processNoise
-    covState = stateTransMatrix @ covState @ stateTransMatrix.T + processNoise
+    x_state = Functions.kepler(x_state)
+    cov_state = state_trans_matrix @ cov_state @ state_trans_matrix.T + process_noise
     
     # If no measurement made, can't calculate K
     if (not np.any(measurement)) or (np.isnan(measurement).all()):
-        return xState, covState
+        return x_state, cov_state
     
     # Measurement-Update
-    # updatedMeasurement = np.matmul(measureMatrix, xState)
-    updated_measurement = measureMatrix @ xState
-    # K = np.dot(np.dot(covState, measureMatrix.T), (np.linalg.inv(np.dot(np.dot(measureMatrix, covState),
-    # measureMatrix.T) + measureNoise)))
-    k = covState @ measureMatrix.T @ np.linalg.inv(measureMatrix @ covState @ measureMatrix.T + measureNoise)
+    updated_measurement = measure_matrix @ x_state
+    k = cov_state @ measure_matrix.T @ np.linalg.inv(measure_matrix @ cov_state @ measure_matrix.T + measure_noise)
+
+    cov_state = (np.eye(len(cov_state)) - k @ measure_matrix) @ cov_state
+    x_state = x_state + k @ (np.reshape(measurement, (3, 1)) - updated_measurement)
     
-    # covState = np.eye(len(covState)) - np.matmul(np.matmul(K, measureMatrix), covState)
-    covState = (np.eye(len(covState)) - k @ measureMatrix) @ covState
-    # xState = xState + np.matmul(K, np.reshape(measurement,(3,1)) - updatedMeasurement)
-    xState = xState + k @ (np.reshape(measurement, (3, 1)) - updated_measurement)
-    
-    return xState, covState
+    return x_state, cov_state

@@ -23,7 +23,7 @@ if __name__ == "__main__":
     sensAlt = np.float64(2390)
     sensLLA = np.array([[sensLat * pi/180], [sensLon * pi/180], [sensAlt]], dtype='float64')
     # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.LLAtoECEF(sensLLA)
+    sensECEF = Transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
     simLength = cfg.simLength
@@ -46,8 +46,8 @@ if __name__ == "__main__":
         
     satAER = np.zeros((3, simLength))
     for count in range(simLength):
-        satAER[:, count:count+1] = Transformations.ECItoAER(satECI[:, count], stepLength, count+1, sensECEF,
-                                                            sensLLA[0], sensLLA[1])
+        satAER[:, count:count+1] = Transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sensECEF,
+                                                              sensLLA[0], sensLLA[1])
 
     angMeasDev = np.float64(1e-6)
     rangeMeasDev = np.float64(20)
@@ -62,8 +62,8 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3, simLength))
     for count in range(simLength):
-        satECIMes[:, [count]] = Transformations.AERtoECI(satAERMes[:, count], stepLength, count+1, sensECEF,
-                                                         sensLLA[0], sensLLA[1])
+        satECIMes[:, [count]] = Transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
+                                                           sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB
     
@@ -148,7 +148,7 @@ if __name__ == "__main__":
         
         stateTransMatrix = Functions.jacobian_finder("kepler", xState, [], delta)
         
-        xState, covState = Filters.EKF_ECI(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
+        xState, covState = Filters.ekf_eci(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
                                            covECI, procNoise)
         
         totalStates[:, count] = np.reshape(xState, 6)
