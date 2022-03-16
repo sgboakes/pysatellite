@@ -184,8 +184,8 @@ if __name__ == "__main__":
 
             stateTransMatrix = Functions.jacobian_finder("kepler", satState[c], [], delta)
 
-            satState[c], covState[c] = Filters.ekf_eci(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
-                                                       measureMatrix, covECI, procNoise)
+            satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
+                                                   measureMatrix, covECI, procNoise)
 
             totalStates[c][:, j] = np.reshape(satState[c], 6)
             err_X_ECI[c][j] = (np.sqrt(np.abs(covState[c][0, 0])))

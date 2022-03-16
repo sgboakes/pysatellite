@@ -11,7 +11,7 @@ setup(name='pysatellite',
       maintainer_email='sgboakes@liverpool.ac.uk',
       url='https://github.com/sgboakes/pysatellite',
       install_requires=[
-          'numpy', 'matplotlib', 'pandas',
+          'numpy', 'scipy', 'matplotlib', 'pandas',
       ],
       pbr=True,
       )
