@@ -57,6 +57,8 @@ def ekf(x_state, cov_state, measurement, state_trans_matrix, measure_matrix, mea
 
 
 class UKF:
+    # Adapted from: https://github.com/balghane/pyUKF
+
     def __init__(self, num_states, process_noise, initial_state, initial_covar, alpha, k, beta, iterate_function):
         self.n_dim = int(num_states)
         self.n_sig = 1 + num_states * 2
