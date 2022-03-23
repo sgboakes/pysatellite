@@ -13,6 +13,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     plt.close('all')
+    # np.random.seed(2)
     # ~~~~ Variables
 
     sin = np.sin
@@ -31,7 +32,6 @@ if __name__ == "__main__":
     stepLength = cfg.stepLength
 
     mu = cfg.mu
-
     trans_earth = False
 
     # ~~~~ Satellite Conversion 
@@ -41,24 +41,17 @@ if __name__ == "__main__":
     # omegaArr: orbital rate for each sat rad/s
     # thetaArr: inclination angle for each sat rad
     # kArr: normal vector for each sat metres
-
-    radArr = np.array([7e6, 8e6, 6.8e6, 7.5e6], dtype='float64')
-
+    num_sats = 40
+    radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
     omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
-
-    thetaArr = np.array([[0], [2 * pi / 3], [3 * pi / 2], [3 * pi / 4]], dtype='float64')
-
-    kArr = np.array([[0, 0, 0],
-                     [0, 0, 1],
-                     [1 / np.sqrt(2), 1 / np.sqrt(2), 0],
-                     [1 / np.sqrt(3), 1 / np.sqrt(3), 1 / np.sqrt(3)]],
-                    dtype='float64')
-
-    num_sats = len(radArr)
+    thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
+    kArr = np.ones((num_sats, 3), dtype='float64')
+    kArr[:, :] = 1 / np.sqrt(3)
 
     # Make data structures
     satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
     satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    satVisCheck = {chr(i + 97): True for i in range(num_sats)}
 
     for i in range(num_sats):
         c = chr(i + 97)
@@ -68,17 +61,18 @@ if __name__ == "__main__":
                           [radArr[i] * cos(omegaArr[i] * (j + 1) * stepLength)]], dtype='float64')
 
             satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
-                        kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
+                               kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
 
-            satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF, sensLLA[0],
-                                                               sensLLA[1])
+            satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
+                                                               sensLLA[0], sensLLA[1])
 
             if not trans_earth:
                 if satAER[c][1, j] < 0:
                     satAER[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
 
         if np.isnan(satAER[c]).all():
-            print('Satellite {s} is not observable'.format(s=c))
+            print('Satellite {s} is not observable'.format(s=i))
+            satVisCheck[c] = False
 
     # Add small deviations for measurements
     # Using calculated max measurement deviations for LT:
@@ -91,16 +85,18 @@ if __name__ == "__main__":
     satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
-        satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
-        satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
-        satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
+        if satVisCheck[c]:
+            satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
+            satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
+            satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
 
     satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
-        for j in range(simLength):
-            satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
-                                                                  sensLLA[0], sensLLA[1])
+        if satVisCheck[c]:
+            for j in range(simLength):
+                satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
+                                                                      sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB
 
@@ -112,12 +108,13 @@ if __name__ == "__main__":
     satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
-        for j in range(simLength):
-            if np.all(np.isnan(satECIMes[c][:, j])):
-                continue
-            else:
-                satState[c][0:3] = np.reshape(satECIMes[c][:, j], (3, 1))
-                break
+        if satVisCheck[c]:
+            for j in range(simLength):
+                if np.all(np.isnan(satECIMes[c][:, j])):
+                    continue
+                else:
+                    satState[c][0:3] = np.reshape(satECIMes[c][:, j], (3, 1))
+                    break
 
     # Process noise
     stdAng = np.float64(1e-5)
@@ -157,84 +154,87 @@ if __name__ == "__main__":
     delta = 1e-6
     for i in range(num_sats):
         c = chr(i + 97)
-        mesCheck = False
-        for j in range(simLength):
-            while not mesCheck:
-                if np.all(np.isnan(satECIMes[c][:, j])):
-                    break
-                else:
-                    mesCheck = True
-                    break
+        if satVisCheck[c]:
+            mesCheck = False
+            for j in range(simLength):
+                while not mesCheck:
+                    if np.all(np.isnan(satECIMes[c][:, j])):
+                        break
+                    else:
+                        mesCheck = True
+                        break
 
-            if not mesCheck:
-                continue
+                if not mesCheck:
+                    continue
 
-            func_params = {
-                "stepLength": stepLength,
-                "count": j + 1,
-                "sensECEF": sensECEF,
-                "sensLLA[0]": sensLLA[0],
-                "sensLLA[1]": sensLLA[1]
-            }
+                func_params = {
+                    "stepLength": stepLength,
+                    "count": j + 1,
+                    "sensECEF": sensECEF,
+                    "sensLLA[0]": sensLLA[0],
+                    "sensLLA[1]": sensLLA[1]
+                }
 
-            jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+                jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
 
-            # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
-            covECI = jacobian @ covAER @ jacobian.T
+                # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+                covECI = jacobian @ covAER @ jacobian.T
 
-            stateTransMatrix = Functions.jacobian_finder("kepler", satState[c], [], delta)
+                stateTransMatrix = Functions.jacobian_finder("kepler", satState[c], [], delta)
 
-            satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
-                                                   measureMatrix, covECI, procNoise)
+                satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
+                                                       measureMatrix, covECI, procNoise)
 
-            totalStates[c][:, j] = np.reshape(satState[c], 6)
-            err_X_ECI[c][j] = (np.sqrt(np.abs(covState[c][0, 0])))
-            err_Y_ECI[c][j] = (np.sqrt(np.abs(covState[c][1, 1])))
-            err_Z_ECI[c][j] = (np.sqrt(np.abs(covState[c][2, 2])))
-            diffState[c][:, j] = totalStates[c][0:3, j] - satECI[c][:, j]
-            # print(satState[c])
+                totalStates[c][:, j] = np.reshape(satState[c], 6)
+                err_X_ECI[c][j] = (np.sqrt(np.abs(covState[c][0, 0])))
+                err_Y_ECI[c][j] = (np.sqrt(np.abs(covState[c][1, 1])))
+                err_Z_ECI[c][j] = (np.sqrt(np.abs(covState[c][2, 2])))
+                diffState[c][:, j] = totalStates[c][0:3, j] - satECI[c][:, j]
+                # print(satState[c])
 
     # ~~~~~ Plotting
 
     for i in range(num_sats):
         c = chr(i + 97)
-        fig, (ax1, ax2, ax3) = plt.subplots(3)
-        axs = [ax1, ax2, ax3]
-        fig.suptitle('Satellite {sat}'.format(sat=c))
-        ax1.plot(satECI[c][0, :])
-        # ax1.plot(satECIMes[c][0,:], 'r.')
-        ax1.plot(totalStates[c][0, :])
-        ax1.set(ylabel='$X_{ECI}$, metres')
+        if satVisCheck[c]:
+            fig, (ax1, ax2, ax3) = plt.subplots(3)
+            axs = [ax1, ax2, ax3]
+            fig.suptitle('Satellite {sat}'.format(sat=i))
+            ax1.plot(satECI[c][0, :])
+            # ax1.plot(satECIMes[c][0,:], 'r.')
+            ax1.plot(totalStates[c][0, :])
+            ax1.set(ylabel='$X_{ECI}$, metres')
 
-        ax2.plot(satECI[c][1, :])
-        # ax2.plot(satECIMes[c][1,:], 'r.')
-        ax2.plot(totalStates[c][1, :])
-        ax2.set(ylabel='$Y_{ECI}$, metres')
+            ax2.plot(satECI[c][1, :])
+            # ax2.plot(satECIMes[c][1,:], 'r.')
+            ax2.plot(totalStates[c][1, :])
+            ax2.set(ylabel='$Y_{ECI}$, metres')
 
-        ax3.plot(satECI[c][2, :])
-        # ax3.plot(satECIMes[c][2,:], 'r.')
-        ax3.plot(totalStates[c][2, :])
-        ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
+            ax3.plot(satECI[c][2, :])
+            # ax3.plot(satECIMes[c][2,:], 'r.')
+            ax3.plot(totalStates[c][2, :])
+            ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
 
-        plt.show()
+            plt.show()
 
     # ~~~~~ Error plots
 
     for i in range(num_sats):
         c = chr(i + 97)
-        fig, (ax1, ax2, ax3) = plt.subplots(3)
-        axs = [ax1, ax2, ax3]
-        fig.suptitle('Satellite {sat} Errors'.format(sat=c))
-        ax1.plot(err_X_ECI[c])
-        ax1.plot(np.abs(diffState[c][0, :]))
-        ax1.set(ylabel='$X_{ECI}$, metres')
+        if satVisCheck[c]:
+            fig, (ax1, ax2, ax3) = plt.subplots(3)
+            axs = [ax1, ax2, ax3]
+            fig.suptitle('Satellite {sat} Errors'.format(sat=i))
+            ax1.plot(err_X_ECI[c])
+            ax1.plot(np.abs(diffState[c][0, :]))
+            ax1.set(ylabel='$X_{ECI}$, metres')
 
-        ax2.plot(err_Y_ECI[c])
-        ax2.plot(np.abs(diffState[c][1, :]))
-        ax2.set(ylabel='$Y_{ECI}$, metres')
+            ax2.plot(err_Y_ECI[c])
+            ax2.plot(np.abs(diffState[c][1, :]))
+            ax2.set(ylabel='$Y_{ECI}$, metres')
 
-        ax3.plot(err_Z_ECI[c])
-        ax3.plot(np.abs(diffState[c][2, :]))
-        ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
+            ax3.plot(err_Z_ECI[c])
+            ax3.plot(np.abs(diffState[c][2, :]))
+            ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
 
-        plt.show()
+            plt.show()
