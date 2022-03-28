@@ -5,13 +5,13 @@ Created 10/06/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-import time
-from pysatellite import Transformations, Functions, Filters
+from pysatellite import Transformations, Functions as Funcs, Filters
 import pysatellite.config as cfg
+from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
+from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
 
 if __name__ == "__main__":
 
-    start_nonKF = time.time()
     # ~~~~ Variables
     
     sin = np.sin
@@ -72,21 +72,25 @@ if __name__ == "__main__":
     # # np.reshape(satECIMes, (3,simLength))
 
     # ~~~~ KF Matrices
+    # Testing UKF from FilterPy
+    points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
+    kf = UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
     
     # Initialise state vector
     # (x, y, z, v_x, v_y, v_z)
-    xState = np.array([[0.0],
-                       [0.0],
-                       [satRadius],
-                       [0.0],
-                       [0.0],
-                       [0.0]],
-                      dtype='float64')
+    kf.x = np.array([[0.0],
+                     [0.0],
+                     [satRadius],
+                     [0.0],
+                     [0.0],
+                     [0.0]],
+                    dtype='float64')
     
     G = np.float64(6.67e-11)
     m_e = np.float64(5.972e24)
     
-    xState[3:6] = np.sqrt((G*m_e) / np.linalg.norm(xState[0:3])) * np.array([[1.0], [0.0], [0.0]], dtype='float64')
+    kf.x[3:6] = np.sqrt((G*m_e) / np.linalg.norm(kf.x[0:3])) * np.array([[1.0], [0.0], [0.0]], dtype='float64')
+    np.reshape(kf.x, (6,))
     
     # Process noise
     stdAng = np.float64(1e-5)
@@ -94,22 +98,22 @@ if __name__ == "__main__":
     coefB = np.float64(stepLength**2.0 * stdAng**2.0)
     coefC = np.float64(0.5 * stepLength**3.0 * stdAng**2.0)
     
-    procNoise = np.array([[coefA, 0, 0, coefC, 0, 0],
-                          [0, coefA, 0, 0, coefC, 0],
-                          [0, 0, coefA, 0, 0, coefC],
-                          [coefC, 0, 0, coefB, 0, 0],
-                          [0, coefC, 0, 0, coefB, 0],
-                          [0, 0, coefC, 0, 0, coefB]],
-                         dtype='float64')
+    kf.Q = np.array([[coefA, 0, 0, coefC, 0, 0],
+                     [0, coefA, 0, 0, coefC, 0],
+                     [0, 0, coefA, 0, 0, coefC],
+                     [coefC, 0, 0, coefB, 0, 0],
+                     [0, coefC, 0, 0, coefB, 0],
+                     [0, 0, coefC, 0, 0, coefB]],
+                    dtype='float64')
     
-    covState = np.float64(1e10) * np.identity(6)
+    kf.P = np.float64(1e10) * np.identity(6)
     
     covAER = np.array([[(angMeasDev * 180/pi)**2, 0, 0],
                        [0, (angMeasDev * 180/pi)**2, 0],
                        [0, 0, rangeMeasDev**2]],
                       dtype='float64')
     
-    measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
+    # measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
     
     totalStates = np.zeros((6, simLength), dtype='float64')
     diffStates = np.zeros((3, simLength), dtype='float64')
@@ -120,13 +124,7 @@ if __name__ == "__main__":
     # err_Y_ECI = []
     # err_Z_ECI = []
     
-    end_nonKF = time.time()
-    nonKFtime = end_nonKF - start_nonKF
-    
-    # ~~~~ Using EKF
-    
-    start_KF = time.time()
-    
+    # ~~~~ Using UKF
     delta = np.float64(1e-6)
     for count in range(simLength):
         # Func params
@@ -137,28 +135,26 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]}
         
-        jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
+        jacobian = Funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
         
         # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
-        covECI = jacobian @ covAER @ jacobian.T
+        kf.R = jacobian @ covAER @ jacobian.T
         
-        stateTransMatrix = Functions.jacobian_finder("kepler", xState, [], delta)
+        # stateTransMatrix = Funcs.jacobian_finder("kepler", xState, [], delta)
         
-        xState, covState = Filters.ekf(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
-                                       covECI, procNoise)
+        # xState, covState = Filters.ekf(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
+        #                                covECI, procNoise)
+
+        kf.predict()
+        kf.update()
         
-        totalStates[:, count] = np.reshape(xState, 6)
-        err_X_ECI[0, count] = (np.sqrt(np.abs(covState[0, 0])))
-        err_Y_ECI[0, count] = (np.sqrt(np.abs(covState[1, 1])))
-        err_Z_ECI[0, count] = (np.sqrt(np.abs(covState[2, 2])))
+        totalStates[:, count] = np.reshape(kf.x, 6)
+        err_X_ECI[0, count] = (np.sqrt(np.abs(kf.P[0, 0])))
+        err_Y_ECI[0, count] = (np.sqrt(np.abs(kf.P[1, 1])))
+        err_Z_ECI[0, count] = (np.sqrt(np.abs(kf.P[2, 2])))
         diffStates[:, count] = totalStates[0:3, count] - satECIMes[:, count]
         
-    end_KF = time.time()
-    KFtime = end_KF - start_KF
-        
     # ~~~~~ Plots
-    start_plots = time.time()
-    
     fig, (ax1, ax2, ax3) = plt.subplots(3)
     axs = [ax1, ax2, ax3]
     fig.suptitle('Satellite Position')
@@ -202,16 +198,4 @@ if __name__ == "__main__":
     ax = fig.add_subplot(111, projection='3d')
     ax.plot(satECI[0, :], satECI[1, :], satECI[2, :])
     ax.plot(totalStates[0, :], totalStates[1, :], totalStates[2, :])
-    
-    end_plots = time.time()
-    plots_time = end_plots - start_plots
-    
-    total_time = nonKFtime + KFtime + plots_time
-    
-    print("Non KF Time: {:.4f}".format(nonKFtime))
-    print('KF Time: {:.4f}'.format(KFtime))
-    print('Plot Time: {:.4f}'.format(plots_time))
-    print('Total Time: {:.4f}'.format(total_time))
-    
-    
     

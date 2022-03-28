@@ -10,6 +10,15 @@ from pysatellite import Transformations, Functions
 import pysatellite.config as cfg
 
 
+def h_x(xState):
+    hx = np.array([[1, 0, 0, 0, 0, 0],
+                   [0, 1, 0, 0, 0, 0],
+                   [0, 0, 1, 0, 0, 0]],
+                  dtype=np.float64)
+
+    hxr = hx @ xState
+    return hxr
+
 def jacobian_finder(func_name, func_variable, func_params, delta):
 
     if func_name in dir(Transformations):
