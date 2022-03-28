@@ -41,7 +41,7 @@ if __name__ == "__main__":
     # omegaArr: orbital rate for each sat rad/s
     # thetaArr: inclination angle for each sat rad
     # kArr: normal vector for each sat metres
-    num_sats = 40
+    num_sats = 20
     radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
     omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
     thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
