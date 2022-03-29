@@ -158,6 +158,50 @@ def aer_to_ned(pos_aer):
     return pos_ned
 
 
+def ecef_to_aer(pos_ecef, ori_ecef, ori_lat, ori_lon):
+    """
+    Function for converting ECEF position to Azimuth/Elevation/Range
+
+    ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
+    pos_eci: A 3x1 vector containing the x, y, and z ECI positions,
+            respectively.
+
+    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
+             as x_ecef, y_ecef, and z_ecef respectively.
+
+    ori_lat: The latitude of the origin of the local NED frame in radians.
+
+    ori_lon: The longitude of the origin of the local NED frame in radians.
+
+    ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
+    pos_aer: A 3x1 vector containing the azimuth, elevation, and range
+            positions in radians, respectively.
+    """
+
+    transform_matrix = np.array(
+        [[(-sin(ori_lat) * cos(ori_lon)), (-sin(ori_lat) * sin(ori_lon)), cos(ori_lat)],
+         [(-sin(ori_lon)), cos(ori_lon), 0.0],
+         [(-cos(ori_lat) * cos(ori_lon)), (-cos(ori_lat) * sin(ori_lon)), (-sin(ori_lat))]],
+        dtype='float64')
+
+    pos_delta = pos_ecef - ori_ecef
+
+    pos_ned = transform_matrix @ pos_delta
+
+    # Convert enu vector to NED vector
+    x_north = np.float64(pos_ned[0])
+    y_east = np.float64(pos_ned[1])
+    z_down = np.float64(pos_ned[2])
+
+    r1 = np.hypot(x_north, y_east)
+    ran = np.hypot(r1, z_down)
+    elevation = np.arctan2(-z_down, r1)
+    azimuth = np.mod(np.arctan2(y_east, x_north), 2 * np.float64(np.pi))
+
+    pos_aer = np.array([[azimuth], [elevation], [ran]])
+    return pos_aer
+
+
 def ecef_to_eci(pos_ecef, step_length, step_num):
     """
     Function for converting ECEF coordinates to ECI coordinates
