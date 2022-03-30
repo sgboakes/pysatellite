@@ -138,8 +138,7 @@ if __name__ == "__main__":
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
                        [0, (angMeasDev * 180 / pi) ** 2, 0],
                        [0, 0, rangeMeasDev ** 2]],
-                      dtype='float64'
-                      )
+                      dtype='float64')
 
     measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
 

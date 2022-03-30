@@ -9,15 +9,18 @@ import numpy as np
 from pysatellite import Transformations, Functions
 import pysatellite.config as cfg
 
+t = cfg.stepLength
 
-def h_x(xState):
+
+def h_x(x_state):
     hx = np.array([[1, 0, 0, 0, 0, 0],
                    [0, 1, 0, 0, 0, 0],
                    [0, 0, 1, 0, 0, 0]],
                   dtype=np.float64)
 
-    hxr = hx @ xState
+    hxr = hx @ x_state
     return hxr
+
 
 def jacobian_finder(func_name, func_variable, func_params, delta):
 
@@ -54,7 +57,7 @@ def jacobian_finder(func_name, func_variable, func_params, delta):
     return jacobian
 
 
-def kepler(x_state):
+def kepler(x_state, t=t):
     
     t = cfg.stepLength
     mu = cfg.mu
