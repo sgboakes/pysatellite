@@ -143,11 +143,6 @@ if __name__ == "__main__":
 
             kf[c].P = np.float64(1e10) * np.identity(6)
 
-    # covState = {chr(i + 97): np.zeros((6, 6)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     covState[c] = np.float64(1e10) * np.identity(6)
-
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
                        [0, (angMeasDev * 180 / pi) ** 2, 0],
                        [0, 0, rangeMeasDev ** 2]],
@@ -159,8 +154,7 @@ if __name__ == "__main__":
     err_Y_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
     err_Z_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
 
-    # ~~~~~ Using EKF
-
+    # ~~~~~ Using UKF
     delta = 1e-6
     for i in range(num_sats):
         c = chr(i + 97)
@@ -185,13 +179,10 @@ if __name__ == "__main__":
                     "sensLLA[1]": sensLLA[1]
                 }
 
-                jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+                jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
+                                                     func_params, delta)
 
-                # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
                 kf[c].R = jacobian @ covAER @ jacobian.T
-
-                # satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
-                #                                        measureMatrix, covECI, procNoise)
 
                 kf[c].predict()
                 if not np.any(np.isnan(satECIMes[c][:, j])):
@@ -205,7 +196,6 @@ if __name__ == "__main__":
                 # print(satState[c])
 
     # ~~~~~ Plotting
-
     for i in range(num_sats):
         c = chr(i + 97)
         if satVisCheck[c]:
