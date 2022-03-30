@@ -107,7 +107,6 @@ if __name__ == "__main__":
     # satECIMes['a'] = satECIMes['a'].T
     # np.reshape(satECIMes['a'], (3, simLength))
 
-    satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
     kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Functions.kepler, hx=Functions.h_x, points=points)
           for i in range(num_sats)}
