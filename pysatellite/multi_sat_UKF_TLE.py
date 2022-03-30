@@ -169,6 +169,13 @@ if __name__ == "__main__":
 
             kf[c].P = np.float64(1e10) * np.identity(6)
 
+    # Add small deviations for measurements
+    # Using calculated max measurement deviations for LT:
+    # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
+    # sigma = 1/2 * 0.15" for it to be definitely on that pixel
+    # Add angle devs to Az/Elev, and range devs to Range
+
+    angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
                        [0, (angMeasDev * 180 / pi) ** 2, 0],
                        [0, 0, rangeMeasDev ** 2]],
