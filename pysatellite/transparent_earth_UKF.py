@@ -90,7 +90,7 @@ if __name__ == "__main__":
     m_e = np.float64(5.972e24)
     
     kf.x[3:6] = np.sqrt((G*m_e) / np.linalg.norm(kf.x[0:3])) * np.array([[1.0], [0.0], [0.0]], dtype='float64')
-    np.reshape(kf.x, (6,))
+    kf.x = kf.x.flat
     
     # Process noise
     stdAng = np.float64(1e-5)
@@ -113,16 +113,11 @@ if __name__ == "__main__":
                        [0, 0, rangeMeasDev**2]],
                       dtype='float64')
     
-    # measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
-    
     totalStates = np.zeros((6, simLength), dtype='float64')
     diffStates = np.zeros((3, simLength), dtype='float64')
     err_X_ECI = np.zeros((1, simLength), dtype='float64')
     err_Y_ECI = np.zeros((1, simLength), dtype='float64')
     err_Z_ECI = np.zeros((1, simLength), dtype='float64')
-    # err_X_ECI = []
-    # err_Y_ECI = []
-    # err_Z_ECI = []
     
     # ~~~~ Using UKF
     delta = np.float64(1e-6)
@@ -136,17 +131,11 @@ if __name__ == "__main__":
             "sensLLA[1]": sensLLA[1]}
         
         jacobian = Funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
-        
-        # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+
         kf.R = jacobian @ covAER @ jacobian.T
-        
-        # stateTransMatrix = Funcs.jacobian_finder("kepler", xState, [], delta)
-        
-        # xState, covState = Filters.ekf(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
-        #                                covECI, procNoise)
 
         kf.predict()
-        kf.update()
+        kf.update(satECIMes[:, count])
         
         totalStates[:, count] = np.reshape(kf.x, 6)
         err_X_ECI[0, count] = (np.sqrt(np.abs(kf.P[0, 0])))
