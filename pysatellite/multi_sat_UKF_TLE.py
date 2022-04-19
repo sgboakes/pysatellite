@@ -134,6 +134,11 @@ if __name__ == "__main__":
 
     # Convert to TEME/ITRS?
 
+    # Vector of times for ~1 day
+    jd, fr = [], []
+    jd.append(2459680)
+    fr.append(9679)
+
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
     kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
           for i in range(num_sats)}
