@@ -15,6 +15,7 @@ from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
 import astropy.coordinates as coord
 import astropy.units as u
+from astropy.time import Time
 from sgp4.api import Satrec, SGP4_ERRORS, jday
 
 if __name__ == "__main__":
@@ -136,8 +137,24 @@ if __name__ == "__main__":
 
     # Vector of times for ~1 day
     jd, fr = [], []
-    jd.append(2459680)
-    fr.append(9679)
+
+    # Array of 12 times over 1 day
+    num_hours = 12
+    for i in range(num_hours):
+        jd_temp, fr_temp = jday(2022, 5, 5, i, 0, 0)
+        jd.append(jd_temp)
+        fr.append(fr_temp)
+
+    e = {chr(i+97): np.zeros((num_hours, 1), dtype=np.float64) for i in range(num_sats)}  #
+    r = {chr(i+97): np.zeros((num_hours, 3), dtype=np.float64) for i in range(num_sats)}  # pos (1x3 cartesian)
+    v = {chr(i+97): np.zeros((num_hours, 3), dtype=np.float64) for i in range(num_sats)}  # vel (1x3 cartesian)
+
+    for i in range(num_sats):
+        c = chr(i + 97)
+        for j in range(num_hours):
+            # Calc e, pos, vel for each sat at each t
+            e[c][j], r[c][j], v[c][j] = tle_data[c].sgp4(jd[j], fr[j])
+
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
     kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
