@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from pysatellite import Transformations, Functions, Filters
 import pysatellite.config as cfg
+import pysatellite.orbit_gen as orbit_gen
 
 if __name__ == "__main__":
 
@@ -28,13 +29,25 @@ if __name__ == "__main__":
     sensECEF = Transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
+    class Sensor:
+        def __init__(self):
+            self.Lat = np.float64(28.300697)
+            self.Lon = np.float64(-16.509675)
+            self.Alt = np.float64(2390)
+            self.LLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
+            # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
+            self.ECEF = Transformations.lla_to_ecef(sensLLA)
+            self.ECEF.shape = (3, 1)
+
+    sens = Sensor()
+
     simLength = cfg.simLength
     stepLength = cfg.stepLength
 
     mu = cfg.mu
     trans_earth = False
 
-    # ~~~~ Satellite Conversion 
+    # ~~~~ Satellite Conversion METHOD 1
 
     # Define sat pos in ECI and convert to AER
     # radArr: radii for each sat metres
@@ -42,61 +55,65 @@ if __name__ == "__main__":
     # thetaArr: inclination angle for each sat rad
     # kArr: normal vector for each sat metres
     num_sats = 40
-    radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
-    omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
-    thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
-    kArr = np.ones((num_sats, 3), dtype='float64')
-    kArr[:, :] = 1 / np.sqrt(3)
-
-    # Make data structures
-    satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    satVisCheck = {chr(i + 97): True for i in range(num_sats)}
-
-    for i in range(num_sats):
-        c = chr(i + 97)
-        for j in range(simLength):
-            v = np.array([[radArr[i] * sin(omegaArr[i] * (j + 1) * stepLength)],
-                          [0],
-                          [radArr[i] * cos(omegaArr[i] * (j + 1) * stepLength)]], dtype='float64')
-
-            satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
-                               kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
-
-            satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
-                                                               sensLLA[0], sensLLA[1])
-
-            if not trans_earth:
-                if satAER[c][1, j] < 0:
-                    satAER[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
-
-        if np.isnan(satAER[c]).all():
-            print('Satellite {s} is not observable'.format(s=i))
-            satVisCheck[c] = False
-
-    # Add small deviations for measurements
-    # Using calculated max measurement deviations for LT:
-    # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
-    # sigma = 1/2 * 0.15" for it to be definitely on that pixel
-    # Add angle devs to Az/Elev, and range devs to Range
-
+    # radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
+    # omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
+    # thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
+    # kArr = np.ones((num_sats, 3), dtype='float64')
+    # kArr[:, :] = 1 / np.sqrt(3)
+    #
+    # # Make data structures
+    # satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    # satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    # satVisCheck = {chr(i + 97): True for i in range(num_sats)}
+    #
+    # for i in range(num_sats):
+    #     c = chr(i + 97)
+    #     for j in range(simLength):
+    #         v = np.array([[radArr[i] * sin(omegaArr[i] * (j + 1) * stepLength)],
+    #                       [0],
+    #                       [radArr[i] * cos(omegaArr[i] * (j + 1) * stepLength)]], dtype='float64')
+    #
+    #         satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
+    #                            kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
+    #
+    #         satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
+    #                                                            sensLLA[0], sensLLA[1])
+    #
+    #         if not trans_earth:
+    #             if satAER[c][1, j] < 0:
+    #                 satAER[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
+    #
+    #     if np.isnan(satAER[c]).all():
+    #         print('Satellite {s} is not observable'.format(s=i))
+    #         satVisCheck[c] = False
+    #
+    # # Add small deviations for measurements
+    # # Using calculated max measurement deviations for LT:
+    # # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
+    # # sigma = 1/2 * 0.15" for it to be definitely on that pixel
+    # # Add angle devs to Az/Elev, and range devs to Range
+    #
     angMeasDev, rangeMeasDev = 1e-6, 20
+    #
+    # satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    # for i in range(num_sats):
+    #     c = chr(i + 97)
+    #     if satVisCheck[c]:
+    #         satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
+    #         satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
+    #         satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
+    #
+    # satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    # for i in range(num_sats):
+    #     c = chr(i + 97)
+    #     if satVisCheck[c]:
+    #         for j in range(simLength):
+    #             satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
+    #                                                                   sensLLA[0], sensLLA[1])
 
-    satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisCheck[c]:
-            satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
-            satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
-            satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
-
-    satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisCheck[c]:
-            for j in range(simLength):
-                satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
-                                                                      sensLLA[0], sensLLA[1])
+    # ~~~~ Satellite Conversion METHOD 2
+    satECI, satAER, satECIMes, satAERMes, satVisCheck = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
+                                                                             trans_earth, sens)
 
     # ~~~~ Temp ECI measurements from MATLAB
 
