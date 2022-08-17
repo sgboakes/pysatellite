@@ -434,9 +434,9 @@ def eci_to_lla(pos_eci, step_length, step_num):
 
     pos_ecef = rotation_matrix @ pos_eci
     
-    x_ecef = pos_ecef[1]
-    y_ecef = pos_ecef[2]
-    z_ecef = pos_ecef(3)
+    x_ecef = pos_ecef[0]
+    y_ecef = pos_ecef[1]
+    z_ecef = pos_ecef[2]
 
     # Closed formula set
     p = np.sqrt(x_ecef**2+y_ecef**2)

@@ -47,73 +47,15 @@ if __name__ == "__main__":
     mu = cfg.mu
     trans_earth = False
 
-    # ~~~~ Satellite Conversion METHOD 1
-
-    # Define sat pos in ECI and convert to AER
-    # radArr: radii for each sat metres
-    # omegaArr: orbital rate for each sat rad/s
-    # thetaArr: inclination angle for each sat rad
-    # kArr: normal vector for each sat metres
     num_sats = 40
-    # radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
-    # omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
-    # thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
-    # kArr = np.ones((num_sats, 3), dtype='float64')
-    # kArr[:, :] = 1 / np.sqrt(3)
-    #
-    # # Make data structures
-    # satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # satVisCheck = {chr(i + 97): True for i in range(num_sats)}
-    #
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     for j in range(simLength):
-    #         v = np.array([[radArr[i] * sin(omegaArr[i] * (j + 1) * stepLength)],
-    #                       [0],
-    #                       [radArr[i] * cos(omegaArr[i] * (j + 1) * stepLength)]], dtype='float64')
-    #
-    #         satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
-    #                            kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
-    #
-    #         satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
-    #                                                            sensLLA[0], sensLLA[1])
-    #
-    #         if not trans_earth:
-    #             if satAER[c][1, j] < 0:
-    #                 satAER[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
-    #
-    #     if np.isnan(satAER[c]).all():
-    #         print('Satellite {s} is not observable'.format(s=i))
-    #         satVisCheck[c] = False
-    #
-    # # Add small deviations for measurements
-    # # Using calculated max measurement deviations for LT:
-    # # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
-    # # sigma = 1/2 * 0.15" for it to be definitely on that pixel
-    # # Add angle devs to Az/Elev, and range devs to Range
-    #
-    angMeasDev, rangeMeasDev = 1e-6, 20
-    #
-    # satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if satVisCheck[c]:
-    #         satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
-    #         satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
-    #         satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
-    #
-    # satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if satVisCheck[c]:
-    #         for j in range(simLength):
-    #             satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
-    #                                                                   sensLLA[0], sensLLA[1])
+
+    # ~~~~ Satellite Conversion METHOD 1
+    # satECI, satECIMes, satAER, satAERMes, satVisCheck = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
+    #                                                                               sens, trans_earth)
 
     # ~~~~ Satellite Conversion METHOD 2
     satECI, satAER, satECIMes, satAERMes, satVisCheck = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                             trans_earth, sens)
+                                                                             sens, trans_earth)
 
     # ~~~~ Temp ECI measurements from MATLAB
 
@@ -152,6 +94,7 @@ if __name__ == "__main__":
         c = chr(i + 97)
         covState[c] = np.float64(1e10) * np.identity(6)
 
+    angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
                        [0, (angMeasDev * 180 / pi) ** 2, 0],
                        [0, 0, rangeMeasDev ** 2]],

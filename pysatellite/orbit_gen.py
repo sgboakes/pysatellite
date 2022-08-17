@@ -47,6 +47,11 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
 
 
 def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
+    # Define sat pos in ECI and convert to AER
+    # radArr: radii for each sat metres
+    # omegaArr: orbital rate for each sat rad/s
+    # thetaArr: inclination angle for each sat rad
+    # kArr: normal vector for each sat metres
     rad_arr = 7e6 * np.ones((num_sats, 1), dtype='float64')
     omega_arr = 1 / np.sqrt(rad_arr ** 3 / mu)
     theta_arr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
@@ -105,82 +110,83 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     #             sat_eci_mes[c][:, j:j + 1] = Transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
     #                                                                     sens.ECEF, sens.LLA[0], sens.LLA[1])
 
-    return sat_eci, sat_eci_mes, sat_aer, sat_aer_mes
+    return sat_eci, sat_eci_mes, sat_aer, sat_aer_mes, sat_vis_check
 
 
-def coe_orbits(num_sats, sim_length, step_length, trans_earth, sens):
+def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     # From poliastro and ssa-gym
 
     random_state = np.random.RandomState()
     RE_eq = cfg.WGS['SemimajorAxis']
     k = mu
 
-    # Expand for multiple satellites
-    inc = np.radians(random_state.uniform(0, 180, num_sats))  # (rad) – Inclination
-    raan = np.radians(random_state.uniform(0, 360, num_sats))  # (rad) – Right ascension of the ascending node.
-    argp = np.radians(random_state.uniform(0, 360, num_sats))  # (rad) – Argument of the pericenter.
-    nu = np.radians(random_state.uniform(0, 360, num_sats))  # (rad) – True anomaly.
-    a = random_state.uniform(RE_eq + 300 * 1000, RE_eq + 2000 * 1000, num_sats)  # (m) – Semi-major axis.
-    ecc = random_state.uniform(0, .25, num_sats)  # (Unit-less) – Eccentricity.
-    b = a * np.sqrt(1 - ecc ** 2)
-    p = a * (1 - ecc ** 2)  # (km) - Semi-latus rectum or parameter
+    complete = False
+    sat_counter = 0
+    sat_eci = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
 
-    sat_eci = {chr(i + 97): np.zeros((6, sim_length)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
-        pqw = np.array([[cos(nu[i]), sin(nu[i]), 0], [-sin(nu[i]), ecc[i] + cos(nu[i]), 0]]) * \
-              np.array([[p[i] / (1 + ecc[i] * cos(nu[i]))], [sqrt(k / p[i])]])
+    ang_mes_dev, range_mes_dev = 1e-6, 20
 
-        r = rotation_matrix(raan[i], 2)
-        r = r @ rotation_matrix(inc[i], 0)
-        rm = r @ rotation_matrix(argp[i], 2)
+    while not complete:
+        # Expand for multiple satellites
+        inc = np.radians(random_state.uniform(0, 180))  # (rad) – Inclination
+        raan = np.radians(random_state.uniform(0, 360))  # (rad) – Right ascension of the ascending node.
+        argp = np.radians(random_state.uniform(0, 360))  # (rad) – Argument of the pericenter.
+        nu = np.radians(random_state.uniform(0, 360))  # (rad) – True anomaly.
+        low = RE_eq + 300 * 1000
+        high = RE_eq + 2000 * 1000
+        a = random_state.uniform(low, high)  # (m) – Semi-major axis.
+        ecc = random_state.uniform(0, .25)  # (Unit-less) – Eccentricity.
+        b = a * np.sqrt(1 - ecc ** 2)
+        if b > low:
+            p = a * (1 - ecc ** 2)  # (km) - Semi-latus rectum or parameter
+        else:
+            continue
+
+        pqw = np.array([[cos(nu), sin(nu), 0], [-sin(nu), ecc + cos(nu), 0]]) * \
+              np.array([[p / (1 + ecc * cos(nu))], [sqrt(k / p)]])
+
+        r = rotation_matrix(raan, 2)
+        r = r @ rotation_matrix(inc, 0)
+        rm = r @ rotation_matrix(argp, 2)
 
         ijk = pqw @ rm.T
-        sat_eci[c][:, 0] = np.reshape(ijk, (6,))
+        eci = np.zeros((6, sim_length))
+        lla = np.zeros((3, sim_length))
+        aer = np.zeros((3, sim_length))
+        eci[:, 0] = np.reshape(ijk, (6,))
 
-    # orbit propagation
-    for i in range(num_sats):
-        c = chr(i + 97)
+        # orbit propagation
         for j in range(sim_length - 1):
-            sat_eci[c][:, j + 1] = fx(sat_eci[c][:, j], step_length)
+            eci[:, j+1] = fx(eci[:, j], step_length)
 
-        sat_eci[c] = sat_eci[c][:3, :]
-
-    # Conversion
-    sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
         for j in range(sim_length):
-            sat_aer[c][:, j:j + 1] = Transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
-                                                                sens.LLA[0], sens.LLA[1])
+            lla[:, j:j+1] = Transformations.eci_to_lla(eci[0:3, j], step_length, j+1)
+            aer[:, j:j+1] = Transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0], sens.LLA[1])
 
-            if not trans_earth:
-                if sat_aer[c][1, j] < 0:
-                    sat_aer[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
+        # Check for orbit validity
+        # if lla[2, :].all() > 300*1000:
+        if np.all(lla[2, :] > 300*1000):
+            if np.all(aer[2, :] > 0):
+                sat_counter += 1
+                c = chr(sat_counter + 97)
+                sat_eci[c] = eci[0:3, :]
+                sat_aer[c] = aer
+                if np.isnan(sat_aer[c]).all():
+                    print('Satellite {s} is not observable'.format(s=c))
+                    sat_vis_check[c] = False
+            else:
+                continue
+        else:
+            continue
 
-        if np.isnan(sat_aer[c]).all():
-            print('Satellite {s} is not observable'.format(s=i))
-            sat_vis_check[c] = False
-
-    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
-    # ang_mes_dev, range_mes_dev = 1e-6, 20
-    #
-    # sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if sat_vis_check[c]:
-    #         sat_aer_mes[c][0, :] = sat_aer[c][0, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-    #         sat_aer_mes[c][1, :] = sat_aer[c][1, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-    #         sat_aer_mes[c][2, :] = sat_aer[c][2, :] + (range_mes_dev * np.random.randn(1, sim_length))
-    #
-    # sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if sat_vis_check[c]:
-    #         for j in range(sim_length):
-    #             sat_eci_mes[c][:, j:j + 1] = Transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
-    #                                                                     sens.ECEF, sens.LLA[0], sens.LLA[1])
+        # Conversion
+        sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
+        if sat_counter >= num_sats:
+            complete = True
 
     return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
 
@@ -206,6 +212,7 @@ def fx(x, dt):
     r0 = x[:3]
     v0 = x[3:]
     tof = dt
+    # import pdb; pdb.set_trace()
     rv = markley(mu, r0, v0, tof)  # (m^3 / s^2), (m), (m/s), (s)
     x_post = np.zeros(6)
     x_post[:3] = rv[0]
