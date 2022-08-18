@@ -21,41 +21,33 @@ if __name__ == "__main__":
     cos = np.cos
     pi = np.float64(np.pi)
 
-    sensLat = np.float64(28.300697)
-    sensLon = np.float64(-16.509675)
-    sensAlt = np.float64(2390)
-    sensLLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
-    # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.lla_to_ecef(sensLLA)
-    sensECEF.shape = (3, 1)
-
     class Sensor:
         def __init__(self):
             self.Lat = np.float64(28.300697)
             self.Lon = np.float64(-16.509675)
             self.Alt = np.float64(2390)
-            self.LLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
+            self.LLA = np.array([[self.Lat * pi / 180], [self.Lon * pi / 180], [self.Alt]], dtype='float64')
             # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-            self.ECEF = Transformations.lla_to_ecef(sensLLA)
+            self.ECEF = Transformations.lla_to_ecef(self.LLA)
             self.ECEF.shape = (3, 1)
+            self.AngVar = 1e-6
+            self.RngVar = 20
 
     sens = Sensor()
 
     simLength = cfg.simLength
     stepLength = cfg.stepLength
-
-    mu = cfg.mu
     trans_earth = False
 
-    num_sats = 40
+    num_sats = 10
 
     # ~~~~ Satellite Conversion METHOD 1
-    # satECI, satECIMes, satAER, satAERMes, satVisCheck = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
-    #                                                                               sens, trans_earth)
+    # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
+    #                                                                              sens, trans_earth)
 
     # ~~~~ Satellite Conversion METHOD 2
-    satECI, satAER, satECIMes, satAERMes, satVisCheck = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                             sens, trans_earth)
+    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
+                                                                            sens, trans_earth)
 
     # ~~~~ Temp ECI measurements from MATLAB
 
@@ -67,7 +59,7 @@ if __name__ == "__main__":
     satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
-        if satVisCheck[c]:
+        if satVisible[c]:
             for j in range(simLength):
                 if np.all(np.isnan(satECIMes[c][:, j])):
                     continue
@@ -95,9 +87,9 @@ if __name__ == "__main__":
         covState[c] = np.float64(1e10) * np.identity(6)
 
     angMeasDev, rangeMeasDev = 1e-6, 20
-    covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
-                       [0, (angMeasDev * 180 / pi) ** 2, 0],
-                       [0, 0, rangeMeasDev ** 2]],
+    covAER = np.array([[(sens.AngVar * 180 / pi) ** 2, 0, 0],
+                       [0, (sens.AngVar * 180 / pi) ** 2, 0],
+                       [0, 0, sens.RngVar ** 2]],
                       dtype='float64')
 
     measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
@@ -113,7 +105,7 @@ if __name__ == "__main__":
     delta = 1e-6
     for i in range(num_sats):
         c = chr(i + 97)
-        if satVisCheck[c]:
+        if satVisible[c]:
             mesCheck = False
             for j in range(simLength):
                 while not mesCheck:
@@ -129,9 +121,9 @@ if __name__ == "__main__":
                 func_params = {
                     "stepLength": stepLength,
                     "count": j + 1,
-                    "sensECEF": sensECEF,
-                    "sensLLA[0]": sensLLA[0],
-                    "sensLLA[1]": sensLLA[1]
+                    "sensECEF": sens.ECEF,
+                    "sensLLA[0]": sens.LLA[0],
+                    "sensLLA[1]": sens.LLA[1]
                 }
 
                 jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
@@ -155,7 +147,7 @@ if __name__ == "__main__":
 
     for i in range(num_sats):
         c = chr(i + 97)
-        if satVisCheck[c]:
+        if satVisible[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]
             fig.suptitle('Satellite {sat}'.format(sat=i))
@@ -180,7 +172,7 @@ if __name__ == "__main__":
 
     for i in range(num_sats):
         c = chr(i + 97)
-        if satVisCheck[c]:
+        if satVisible[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]
             fig.suptitle('Satellite {sat} Errors'.format(sat=i))

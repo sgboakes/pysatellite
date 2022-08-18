@@ -25,15 +25,14 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
     # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
     # sigma = 1/2 * 0.15" for it to be definitely on that pixel
     # Add angle devs to Az/Elev, and range devs to Range
-    ang_mes_dev, range_mes_dev = 1e-6, 20
 
     sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
         if sat_vis_check[c]:
-            sat_aer_mes[c][0, :] = sat_aer[c][0, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-            sat_aer_mes[c][1, :] = sat_aer[c][1, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-            sat_aer_mes[c][2, :] = sat_aer[c][2, :] + (range_mes_dev * np.random.randn(1, sim_length))
+            sat_aer_mes[c][0, :] = np.random.normal(sat_aer[c][0, :], sens.AngVar, (1, sim_length))
+            sat_aer_mes[c][1, :] = np.random.normal(sat_aer[c][1, :], sens.AngVar, (1, sim_length))
+            sat_aer_mes[c][2, :] = np.random.normal(sat_aer[c][2, :], sens.RngVar, (1, sim_length))
 
     sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     for i in range(num_sats):
@@ -84,31 +83,7 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
             print('Satellite {s} is not observable'.format(s=i))
             sat_vis_check[c] = False
 
-    # Add small deviations for measurements
-    # Using calculated max measurement deviations for LT:
-    # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
-    # sigma = 1/2 * 0.15" for it to be definitely on that pixel
-    # Add angle devs to Az/Elev, and range devs to Range
-
     sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
-
-    # ang_mes_dev, range_mes_dev = 1e-6, 20
-    #
-    # sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if sat_vis_check[c]:
-    #         sat_aer_mes[c][0, :] = sat_aer[c][0, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-    #         sat_aer_mes[c][1, :] = sat_aer[c][1, :] + (ang_mes_dev * np.random.randn(1, sim_length))
-    #         sat_aer_mes[c][2, :] = sat_aer[c][2, :] + (range_mes_dev * np.random.randn(1, sim_length))
-    #
-    # sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if sat_vis_check[c]:
-    #         for j in range(sim_length):
-    #             sat_eci_mes[c][:, j:j + 1] = Transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
-    #                                                                     sens.ECEF, sens.LLA[0], sens.LLA[1])
 
     return sat_eci, sat_eci_mes, sat_aer, sat_aer_mes, sat_vis_check
 
@@ -165,19 +140,21 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
 
         for j in range(sim_length):
             lla[:, j:j+1] = Transformations.eci_to_lla(eci[0:3, j], step_length, j+1)
-            aer[:, j:j+1] = Transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0], sens.LLA[1])
+            aer[:, j:j+1] = Transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0],
+                                                       sens.LLA[1])
 
         # Check for orbit validity
         # if lla[2, :].all() > 300*1000:
         if np.all(lla[2, :] > 300*1000):
             if np.all(aer[2, :] > 0):
-                sat_counter += 1
                 c = chr(sat_counter + 97)
                 sat_eci[c] = eci[0:3, :]
                 sat_aer[c] = aer
                 if np.isnan(sat_aer[c]).all():
                     print('Satellite {s} is not observable'.format(s=c))
                     sat_vis_check[c] = False
+                print('Sat {s} orbit done'.format(s=sat_counter))
+                sat_counter += 1
             else:
                 continue
         else:
