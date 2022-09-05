@@ -97,6 +97,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
 
     complete = False
     sat_counter = 0
+    reject_counter = 0
     sat_eci = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
@@ -119,6 +120,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         if b > low:
             p = a * (1 - ecc ** 2)  # (km) - Semi-latus rectum or parameter
         else:
+            reject_counter += 1
             continue
 
         pqw = np.array([[cos(nu), sin(nu), 0], [-sin(nu), ecc + cos(nu), 0]]) * \
@@ -156,14 +158,17 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
                 print('Sat {s} orbit done'.format(s=sat_counter))
                 sat_counter += 1
             else:
+                reject_counter += 1
                 continue
         else:
+            reject_counter += 1
             continue
 
         # Conversion
         sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
         if sat_counter >= num_sats:
             complete = True
+            print("Created {s} satellites, rejected {n} satellites".format(s=num_sats, n=reject_counter))
 
     return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
 

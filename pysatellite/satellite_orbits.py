@@ -41,7 +41,7 @@ if __name__ == "__main__":
     stepLength = cfg.stepLength
     trans_earth = False
 
-    num_sats = 10
+    num_sats = 50
 
     # ~~~~ Satellite Conversion METHOD 1
     # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
