@@ -110,17 +110,16 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         # Expand for multiple satellites
         inc = np.radians(random_state.uniform(0, 180))  # (rad) – Inclination
         raan = np.radians(random_state.uniform(0, 360))  # (rad) – Right ascension of the ascending node.
-        argp = np.radians(random_state.uniform(0, 360))  # (rad) – Argument of the pericenter.
-        nu = np.radians(random_state.uniform(0, 360))  # (rad) – True anomaly.
-        low = RE_eq + 300 * 1000
-        high = RE_eq + 2000 * 1000
-        a = random_state.uniform(low, high)  # (m) – Semi-major axis.
         ecc = random_state.uniform(0, .25)  # (Unit-less) – Eccentricity.
+        argp = np.radians(random_state.uniform(0, 360))  # (rad) – Argument of the pericenter/periapsis/perigee.
+        nu = np.radians(random_state.uniform(0, 360))  # (rad) – True anomaly.
+        low, high = RE_eq + 300 * 1000, RE_eq + 2000 * 1000
+        a = random_state.uniform(low, high)  # (m) – Semi-major axis.
         b = a * np.sqrt(1 - ecc ** 2)
         if b > low:
             p = a * (1 - ecc ** 2)  # (km) - Semi-latus rectum or parameter
         else:
-            reject_counter += 1
+            # reject_counter += 1
             continue
 
         pqw = np.array([[cos(nu), sin(nu), 0], [-sin(nu), ecc + cos(nu), 0]]) * \
@@ -168,7 +167,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
         if sat_counter >= num_sats:
             complete = True
-            print("Created {s} satellites, rejected {n} satellites".format(s=num_sats, n=reject_counter))
+            print("Created {s} satellites, rejected {n} satellites after propagating".format(s=num_sats,
+                                                                                             n=reject_counter))
 
     return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
 
