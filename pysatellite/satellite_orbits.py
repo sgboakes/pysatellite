@@ -14,7 +14,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     plt.close('all')
-    np.random.seed(2)  # Will seeding work with acceptance model in orbit generation?
+    np.random.seed(3)  # Will seeding work with acceptance model in orbit generation?
     # ~~~~ Variables
 
     sin = np.sin
@@ -38,13 +38,14 @@ if __name__ == "__main__":
     sens = Sensor()
 
     simLength = cfg.simLength
+    simLength = 20
     stepLength = cfg.stepLength
     trans_earth = False
 
-    num_sats = 50
+    num_sats = 10
 
     # ~~~~ Satellite Conversion METHOD 1
-    # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
+    # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
     #                                                                              sens, trans_earth)
 
     # ~~~~ Satellite Conversion METHOD 2

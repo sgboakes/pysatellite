@@ -14,7 +14,7 @@ import pysatellite.orbit_gen as orbit_gen
 if __name__ == "__main__":
 
     plt.close('all')
-    # np.random.seed(2)
+    np.random.seed(2)
     # ~~~~ Variables
 
     sin = np.sin

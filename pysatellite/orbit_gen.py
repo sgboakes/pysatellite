@@ -30,9 +30,9 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
     for i in range(num_sats):
         c = chr(i + 97)
         if sat_vis_check[c]:
-            sat_aer_mes[c][0, :] = np.random.normal(sat_aer[c][0, :], sens.AngVar, (1, sim_length))
-            sat_aer_mes[c][1, :] = np.random.normal(sat_aer[c][1, :], sens.AngVar, (1, sim_length))
-            sat_aer_mes[c][2, :] = np.random.normal(sat_aer[c][2, :], sens.RngVar, (1, sim_length))
+            sat_aer_mes[c][0, :] = sens.AngVar * np.random.randn(sim_length,) + sat_aer[c][0, :]
+            sat_aer_mes[c][1, :] = sens.AngVar * np.random.randn(sim_length,) + sat_aer[c][1, :]
+            sat_aer_mes[c][2, :] = sens.RngVar * np.random.randn(sim_length,) + sat_aer[c][2, :]
 
     sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     for i in range(num_sats):
@@ -85,13 +85,11 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
 
     sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
 
-    return sat_eci, sat_eci_mes, sat_aer, sat_aer_mes, sat_vis_check
+    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
 
 
 def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     # From poliastro and ssa-gym
-
-    random_state = np.random.RandomState()
     RE_eq = cfg.WGS['SemimajorAxis']
     k = mu
 
@@ -107,14 +105,15 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     ang_mes_dev, range_mes_dev = 1e-6, 20
 
     while not complete:
-        # Expand for multiple satellites
-        inc = np.radians(random_state.uniform(0, 180))  # (rad) – Inclination
-        raan = np.radians(random_state.uniform(0, 360))  # (rad) – Right ascension of the ascending node.
-        ecc = random_state.uniform(0, .25)  # (Unit-less) – Eccentricity.
-        argp = np.radians(random_state.uniform(0, 360))  # (rad) – Argument of the pericenter/periapsis/perigee.
-        nu = np.radians(random_state.uniform(0, 360))  # (rad) – True anomaly.
+        # Expand for multiple satellites?
+        inc = np.deg2rad(180 * np.random.rand())  # (rad) – Inclination
+        raan = np.deg2rad(360 * np.random.rand())  # (rad) – Right ascension of the ascending node.
+        ecc = 0.25 * np.random.rand()  # (Unit-less) – Eccentricity.
+        argp = np.deg2rad(360 * np.random.rand())  # (rad) – Argument of the pericenter/periapsis/perigee.
+        nu = np.deg2rad(360 * np.random.rand())  # (rad) – True anomaly.
+
         low, high = RE_eq + 300 * 1000, RE_eq + 2000 * 1000
-        a = random_state.uniform(low, high)  # (m) – Semi-major axis.
+        a = ((low - high)*np.random.rand() + high)  # (m) – Semi-major axis.
         b = a * np.sqrt(1 - ecc ** 2)
         if b > low:
             p = a * (1 - ecc ** 2)  # (km) - Semi-latus rectum or parameter
@@ -147,14 +146,14 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         # Check for orbit validity
         # if lla[2, :].all() > 300*1000:
         if np.all(lla[2, :] > 300*1000):
-            if np.all(aer[2, :] > 0):
+            if max(aer[1, :]) > 0:
                 c = chr(sat_counter + 97)
                 sat_eci[c] = eci[0:3, :]
                 sat_aer[c] = aer
                 if np.isnan(sat_aer[c]).all():
                     print('Satellite {s} is not observable'.format(s=c))
                     sat_vis_check[c] = False
-                print('Sat {s} orbit done'.format(s=sat_counter))
+                # print('Sat {s} orbit done'.format(s=sat_counter))
                 sat_counter += 1
             else:
                 reject_counter += 1
@@ -163,10 +162,10 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
             reject_counter += 1
             continue
 
-        # Conversion
-        sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
         if sat_counter >= num_sats:
             complete = True
+            # Conversion
+            sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
             print("Created {s} satellites, rejected {n} satellites after propagating".format(s=num_sats,
                                                                                              n=reject_counter))
 
