@@ -49,6 +49,7 @@ if __name__ == "__main__":
     #                                                                              sens, trans_earth)
 
     # ~~~~ Satellite Conversion METHOD 2
+    # return orbital elements of satellites?
     satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
                                                                             sens, trans_earth)
 
@@ -77,3 +78,14 @@ if __name__ == "__main__":
         ax.plot(satAER[c][0, :], np.rad2deg(satAER[c][1, :]), 'x-')
 
     plt.show()
+
+    # relationship between different accepted orbital elements
+    # could use to reduce number of rejected samples
+    # or could remove check for if elev > 0 for each satellite and use KDE sampling?
+    for j in range(len(elements[0])):
+        plt.figure()
+        for i in range(num_sats):
+            c = chr(i + 97)
+            plt.plot(i, elements[c][j], 'x')
+
+        plt.show()

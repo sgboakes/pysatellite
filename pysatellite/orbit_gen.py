@@ -101,6 +101,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
+    elements = {chr(i + 97): [] for i in range(num_sats)}
 
     ang_mes_dev, range_mes_dev = 1e-6, 20
 
@@ -122,7 +123,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
             continue
 
         pqw = np.array([[cos(nu), sin(nu), 0], [-sin(nu), ecc + cos(nu), 0]]) * \
-              np.array([[p / (1 + ecc * cos(nu))], [sqrt(k / p)]])
+            np.array([[p / (1 + ecc * cos(nu))], [sqrt(k / p)]])
 
         r = rotation_matrix(raan, 2)
         r = r @ rotation_matrix(inc, 0)
@@ -148,13 +149,15 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         if np.all(lla[2, :] > 300*1000):
             if max(aer[1, :]) > 0:
                 c = chr(sat_counter + 97)
-                sat_eci[c] = eci[0:3, :]
+                sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
                 sat_aer[c] = aer
                 if np.isnan(sat_aer[c]).all():
                     print('Satellite {s} is not observable'.format(s=c))
                     sat_vis_check[c] = False
                 # print('Sat {s} orbit done'.format(s=sat_counter))
                 sat_counter += 1
+                elements[c] = [a, ecc, inc, raan, argp, nu]
+
             else:
                 reject_counter += 1
                 continue
@@ -166,10 +169,10 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
             complete = True
             # Conversion
             sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
-            print("Created {s} satellites, rejected {n} satellites after propagating".format(s=num_sats,
-                                                                                             n=reject_counter))
+            # print("Created {s} satellites, rejected {n} satellites after propagating".format(s=num_sats,
+            #                                                                                  n=reject_counter))
 
-    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
+    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check  # , elements
 
 
 def rotation_matrix(angle, axis):
