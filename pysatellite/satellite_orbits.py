@@ -14,7 +14,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     plt.close('all')
-    np.random.seed(3)  # Will seeding work with acceptance model in orbit generation?
+    # np.random.seed(3)  # Will seeding work with acceptance model in orbit generation?
     # ~~~~ Variables
 
     sin = np.sin
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     sens = Sensor()
 
     simLength = cfg.simLength
-    simLength = 20
+    simLength = 200
     stepLength = cfg.stepLength
     trans_earth = False
 
@@ -82,10 +82,10 @@ if __name__ == "__main__":
     # relationship between different accepted orbital elements
     # could use to reduce number of rejected samples
     # or could remove check for if elev > 0 for each satellite and use KDE sampling?
-    for j in range(len(elements[0])):
-        plt.figure()
-        for i in range(num_sats):
-            c = chr(i + 97)
-            plt.plot(i, elements[c][j], 'x')
-
-        plt.show()
+    # for j in range(len(elements[0])):
+    #     plt.figure()
+    #     for i in range(num_sats):
+    #         c = chr(i + 97)
+    #         plt.plot(i, elements[c][j], 'x')
+    #
+    #     plt.show()

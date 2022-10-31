@@ -147,7 +147,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         # Check for orbit validity
         # if lla[2, :].all() > 300*1000:
         if np.all(lla[2, :] > 300*1000):
-            if max(aer[1, :]) > 0:
+            if max(aer[1, :]) > np.deg2rad(15):
                 c = chr(sat_counter + 97)
                 sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
                 sat_aer[c] = aer
