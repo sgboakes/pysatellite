@@ -19,7 +19,7 @@ sqrt = np.sqrt
 mu = cfg.mu
 
 
-def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens):
+def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens, trans_earth):
     # Add small deviations for measurements
     # Using calculated max measurement deviations for LT:
     # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
@@ -42,10 +42,20 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
                 sat_eci_mes[c][:, j:j + 1] = Transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
                                                                         sens.ECEF, sens.LLA[0], sens.LLA[1])
 
+    # Making NaN measurements where elevation < 0
+    # Think of more efficient way to do this? Vectorisation at top is good, implement something similar here?
+    if not trans_earth:
+        for i in range(num_sats):
+            c = chr(i+97)
+            for j in range(sim_length):
+                if sat_aer[c][1, j] < 0:
+                    sat_aer_mes[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
+                    sat_eci_mes[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
+
     return sat_eci_mes, sat_aer_mes
 
 
-def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
+def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     # Define sat pos in ECI and convert to AER
     # radArr: radii for each sat metres
     # omegaArr: orbital rate for each sat rad/s
@@ -75,20 +85,21 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth):
             sat_aer[c][:, j:j + 1] = Transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
                                                                 sens.LLA[0], sens.LLA[1])
 
-            if not trans_earth:
-                if sat_aer[c][1, j] < 0:
-                    sat_aer[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
+            # if not trans_earth:
+            #     if sat_aer[c][1, j] < 0:
+            #         sat_aer[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
 
         if np.isnan(sat_aer[c]).all():
             print('Satellite {s} is not observable'.format(s=i))
             sat_vis_check[c] = False
 
-    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
+    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens,
+                                                trans_earth)
 
     return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
 
 
-def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
+def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     # From poliastro and ssa-gym
     RE_eq = cfg.WGS['SemimajorAxis']
     k = mu
@@ -96,7 +107,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
     complete = False
     sat_counter = 0
     reject_counter = 0
-    sat_eci = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_eci = {chr(i + 97): np.zeros((6, sim_length)) for i in range(num_sats)}
     sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
@@ -105,6 +116,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
 
     ang_mes_dev, range_mes_dev = 1e-6, 20
 
+    # TODO: Keep velocity part of ECI?
+    # Keep for now, need to adjust either function calls/function usage
     while not complete:
         # Expand for multiple satellites?
         inc = np.deg2rad(180 * np.random.rand())  # (rad) – Inclination
@@ -149,7 +162,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         if np.all(lla[2, :] > 300*1000):
             if max(aer[1, :]) > np.deg2rad(15):
                 c = chr(sat_counter + 97)
-                sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
+                # sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
+                sat_eci[c] = eci
                 sat_aer[c] = aer
                 if np.isnan(sat_aer[c]).all():
                     print('Satellite {s} is not observable'.format(s=c))
@@ -168,7 +182,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth):
         if sat_counter >= num_sats:
             complete = True
             # Conversion
-            sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens)
+            sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens,
+                                                        trans_earth)
             # print("Created {s} satellites, rejected {n} satellites after propagating".format(s=num_sats,
             #                                                                                  n=reject_counter))
 

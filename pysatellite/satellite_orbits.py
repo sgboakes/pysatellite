@@ -24,10 +24,10 @@ if __name__ == "__main__":
 
     class Sensor:
         def __init__(self):
-            self.Lat = np.float64(28.300697)
-            self.Lon = np.float64(-16.509675)
-            self.Alt = np.float64(2390)
-            self.LLA = np.array([[self.Lat * pi / 180], [self.Lon * pi / 180], [self.Alt]], dtype='float64')
+            self.LLA = np.array([[np.deg2rad(np.float64(28.300697))],
+                                 [np.deg2rad(np.float64(-16.509675))],
+                                 [(np.float64(2390))]],
+                                dtype='float64')
             # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
             self.ECEF = Transformations.lla_to_ecef(self.LLA)
             self.ECEF.shape = (3, 1)
@@ -51,7 +51,7 @@ if __name__ == "__main__":
     # ~~~~ Satellite Conversion METHOD 2
     # return orbital elements of satellites?
     satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                            sens, trans_earth)
+                                                                            sens)
 
     # ~~~~~ Globe Plot
 

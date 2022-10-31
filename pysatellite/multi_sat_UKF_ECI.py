@@ -49,7 +49,7 @@ if __name__ == "__main__":
 
     # ~~~~ Satellite Conversion METHOD 2
     satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                            sens, trans_earth)
+                                                                            sens)
 
     # ~~~~ Temp ECI measurements from MATLAB
 

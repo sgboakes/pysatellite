@@ -14,7 +14,7 @@ import pysatellite.orbit_gen as orbit_gen
 if __name__ == "__main__":
 
     plt.close('all')
-    np.random.seed(2)
+    # np.random.seed(2)
     # ~~~~ Variables
 
     sin = np.sin
@@ -35,17 +35,19 @@ if __name__ == "__main__":
 
     simLength = cfg.simLength
     stepLength = cfg.stepLength
-    trans_earth = False
 
     num_sats = 10
 
     # ~~~~ Satellite Conversion METHOD 1
     # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
-    #                                                                              sens, trans_earth)
+    #                                                                              sens)
 
     # ~~~~ Satellite Conversion METHOD 2
     satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                            sens, trans_earth)
+                                                                            sens)
+
+    for i, c in enumerate(satECI):
+        satECI[c] = satECI[c][0:3, :]
 
     # ~~~~ Temp ECI measurements from MATLAB
 
@@ -79,10 +81,7 @@ if __name__ == "__main__":
                           [0, 0, coefC, 0, 0, coefB]],
                          dtype='float64')
 
-    covState = {chr(i + 97): np.zeros((6, 6)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
-        covState[c] = np.float64(1e10) * np.identity(6)
+    covState = {chr(i + 97): np.float64(1e10) * np.identity(6) for i in range(num_sats)}
 
     angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(sens.AngVar * 180 / pi) ** 2, 0, 0],
