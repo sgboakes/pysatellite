@@ -8,7 +8,7 @@ Created on Tue Jan  18 13:29:40 2022
 import numpy as np
 import matplotlib.pyplot as plt
 # from mpl_toolkits import mplot3d
-from pysatellite import Transformations, Functions, Filters
+from pysatellite import transformations, functions, filters
 import pysatellite.config as cfg
 
 if __name__ == "__main__":
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     sensAlt = np.float64(2390)
     sensLLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
     # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.lla_to_ecef(sensLLA)
+    sensECEF = transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
     simLength = cfg.simLength
@@ -71,7 +71,7 @@ if __name__ == "__main__":
             satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
                         kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
 
-            satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF, sensLLA[0],
+            satAER[c][:, j:j + 1] = transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF, sensLLA[0],
                                                                sensLLA[1])
 
             if not trans_earth:
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     for i in range(num_sats):
         c = chr(i + 97)
         for j in range(simLength):
-            satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
+            satECIMes[c][:, j:j + 1] = transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
                                                                   sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB
@@ -178,14 +178,14 @@ if __name__ == "__main__":
                 "sensLLA[1]": sensLLA[1]
             }
 
-            jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+            jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
 
             # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
             covECI = jacobian @ covAER @ jacobian.T
 
-            stateTransMatrix = Functions.jacobian_finder("kepler", satState[c], [], delta)
+            stateTransMatrix = functions.jacobian_finder("kepler", satState[c], [], delta)
 
-            satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
+            satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
                                                    measureMatrix, covECI, procNoise)
 
             totalStates[c][:, j] = np.reshape(satState[c], 6)

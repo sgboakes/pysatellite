@@ -9,7 +9,7 @@ import urllib.request
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-from pysatellite import Transformations, Functions as Funcs
+from pysatellite import transformations, functions as Funcs
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -33,7 +33,7 @@ if __name__ == "__main__":
     sensAlt = np.float64(2390)
     sensLLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
     # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.lla_to_ecef(sensLLA)
+    sensECEF = transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
     simLength = cfg.simLength
@@ -71,7 +71,7 @@ if __name__ == "__main__":
     #         satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
     #                            kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
     #
-    #         satAER[c][:, j:j + 1] = Transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
+    #         satAER[c][:, j:j + 1] = transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
     #                                                            sensLLA[0], sensLLA[1])
     #
     #         if not trans_earth:
@@ -103,7 +103,7 @@ if __name__ == "__main__":
     #     c = chr(i + 97)
     #     if satVisCheck[c]:
     #         for j in range(simLength):
-    #             satECIMes[c][:, j:j + 1] = Transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
+    #             satECIMes[c][:, j:j + 1] = transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
     #                                                                   sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB

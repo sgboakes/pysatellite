@@ -7,7 +7,7 @@ Created on Fri Oct  8 14:36:04 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import Transformations, Functions, Filters
+from pysatellite import transformations, functions, filters
 import pysatellite.config as cfg
 import pysatellite.orbit_gen as orbit_gen
 
@@ -26,7 +26,7 @@ if __name__ == "__main__":
             # Using Liverpool Telescope as location
             self.LLA = np.array([[np.deg2rad(28.300697)], [np.deg2rad(-16.509675)], [2390]], dtype='float64')
             # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-            self.ECEF = Transformations.lla_to_ecef(self.LLA)
+            self.ECEF = transformations.lla_to_ecef(self.LLA)
             self.ECEF.shape = (3, 1)
             self.AngVar = 1e-6
             self.RngVar = 20
@@ -36,7 +36,7 @@ if __name__ == "__main__":
     simLength = cfg.simLength
     stepLength = cfg.stepLength
 
-    num_sats = 10
+    num_sats = 4
 
     # ~~~~ Satellite Conversion METHOD 1
     # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
@@ -123,14 +123,14 @@ if __name__ == "__main__":
                     "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+                jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
 
                 # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
                 covECI = jacobian @ covAER @ jacobian.T
 
-                stateTransMatrix = Functions.jacobian_finder("kepler", satState[c], [], delta)
+                stateTransMatrix = functions.jacobian_finder("kepler", satState[c], [], delta)
 
-                satState[c], covState[c] = Filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
+                satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
                                                        measureMatrix, covECI, procNoise)
 
                 totalStates[c][:, j] = np.reshape(satState[c], 6)

@@ -5,7 +5,7 @@ Created 10/06/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import Transformations, Functions as Funcs, Filters
+from pysatellite import transformations, functions as Funcs, filters
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     sensAlt = np.float64(2390)
     sensLLA = np.array([[sensLat * pi/180], [sensLon * pi/180], [sensAlt]], dtype='float64')
     # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.lla_to_ecef(sensLLA)
+    sensECEF = transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
     simLength = cfg.simLength
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         
     satAER = np.zeros((3, simLength))
     for count in range(simLength):
-        satAER[:, count:count+1] = Transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sensECEF,
+        satAER[:, count:count+1] = transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sensECEF,
                                                               sensLLA[0], sensLLA[1])
 
     angMeasDev = np.float64(1e-6)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3, simLength))
     for count in range(simLength):
-        satECIMes[:, [count]] = Transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
+        satECIMes[:, [count]] = transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
                                                            sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB

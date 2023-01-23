@@ -6,7 +6,7 @@ Created on Wed Jul 20 10:09:04 2022
 """
 
 import numpy as np
-from pysatellite import Transformations, Functions, Filters
+from pysatellite import transformations, functions, filters
 import pysatellite.config as cfg
 from poliastro.core.propagation import markley
 
@@ -39,7 +39,7 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
         c = chr(i + 97)
         if sat_vis_check[c]:
             for j in range(sim_length):
-                sat_eci_mes[c][:, j:j + 1] = Transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
+                sat_eci_mes[c][:, j:j + 1] = transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
                                                                         sens.ECEF, sens.LLA[0], sens.LLA[1])
 
     # Making NaN measurements where elevation < 0
@@ -82,7 +82,7 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
             sat_eci[c][:, j] = (v @ cos(theta_arr[i])) + (np.cross(k_arr[i, :].T, v.T) * sin(theta_arr[i])) + (
                     k_arr[i, :].T * np.dot(k_arr[i, :].T, v) * (1 - cos(theta_arr[i])))
 
-            sat_aer[c][:, j:j + 1] = Transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
+            sat_aer[c][:, j:j + 1] = transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
                                                                 sens.LLA[0], sens.LLA[1])
 
             # if not trans_earth:
@@ -153,8 +153,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
             eci[:, j+1] = fx(eci[:, j], step_length)
 
         for j in range(sim_length):
-            lla[:, j:j+1] = Transformations.eci_to_lla(eci[0:3, j], step_length, j+1)
-            aer[:, j:j+1] = Transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0],
+            lla[:, j:j+1] = transformations.eci_to_lla(eci[0:3, j], step_length, j+1)
+            aer[:, j:j+1] = transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0],
                                                        sens.LLA[1])
 
         # Check for orbit validity

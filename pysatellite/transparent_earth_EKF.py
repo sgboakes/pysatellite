@@ -6,7 +6,7 @@ Created 10/06/2021
 import numpy as np
 import matplotlib.pyplot as plt
 import time
-from pysatellite import Transformations, Functions, Filters
+from pysatellite import transformations, functions, filters
 import pysatellite.config as cfg
 
 if __name__ == "__main__":
@@ -23,7 +23,7 @@ if __name__ == "__main__":
     sensAlt = np.float64(2390)
     sensLLA = np.array([[sensLat * pi/180], [sensLon * pi/180], [sensAlt]], dtype='float64')
     # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = Transformations.lla_to_ecef(sensLLA)
+    sensECEF = transformations.lla_to_ecef(sensLLA)
     sensECEF.shape = (3, 1)
 
     simLength = cfg.simLength
@@ -45,7 +45,7 @@ if __name__ == "__main__":
         
     satAER = np.zeros((3, simLength))
     for count in range(simLength):
-        satAER[:, count:count+1] = Transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sensECEF,
+        satAER[:, count:count+1] = transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sensECEF,
                                                               sensLLA[0], sensLLA[1])
 
     angMeasDev = np.float64(1e-6)
@@ -61,7 +61,7 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3, simLength))
     for count in range(simLength):
-        satECIMes[:, [count]] = Transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
+        satECIMes[:, [count]] = transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
                                                            sensLLA[0], sensLLA[1])
 
     # ~~~~ Temp ECI measurements from MATLAB
@@ -137,14 +137,14 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]}
         
-        jacobian = Functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
+        jacobian = functions.jacobian_finder("AERtoECI", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
         
         # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
         covECI = jacobian @ covAER @ jacobian.T
         
-        stateTransMatrix = Functions.jacobian_finder("kepler", xState, [], delta)
+        stateTransMatrix = functions.jacobian_finder("kepler", xState, [], delta)
         
-        xState, covState = Filters.ekf(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
+        xState, covState = filters.ekf(xState, covState, satECIMes[:, count], stateTransMatrix, measureMatrix,
                                        covECI, procNoise)
         
         totalStates[:, count] = np.reshape(xState, 6)

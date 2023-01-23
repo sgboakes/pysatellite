@@ -8,7 +8,7 @@ Created on Mon Aug  22 12:51:40 2022
 import numpy as np
 import matplotlib.pyplot as plt
 # from mpl_toolkits import mplot3d
-from pysatellite import Transformations, Functions, Filters, orbit_gen
+from pysatellite import transformations, functions, filters, orbit_gen
 import pysatellite.config as cfg
 
 if __name__ == "__main__":
@@ -29,7 +29,7 @@ if __name__ == "__main__":
                                  [(np.float64(2390))]],
                                 dtype='float64')
             # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-            self.ECEF = Transformations.lla_to_ecef(self.LLA)
+            self.ECEF = transformations.lla_to_ecef(self.LLA)
             self.ECEF.shape = (3, 1)
             self.AngVar = 1e-6
             self.RngVar = 20

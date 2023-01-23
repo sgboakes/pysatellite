@@ -7,7 +7,7 @@ Created on Fri Oct  8 14:36:04 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import Transformations, Functions
+from pysatellite import transformations, functions
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -31,7 +31,7 @@ if __name__ == "__main__":
             self.Alt = np.float64(2390)
             self.LLA = np.array([[self.Lat * pi / 180], [self.Lon * pi / 180], [self.Alt]], dtype='float64')
             # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-            self.ECEF = Transformations.lla_to_ecef(self.LLA)
+            self.ECEF = transformations.lla_to_ecef(self.LLA)
             self.ECEF.shape = (3, 1)
 
 
@@ -59,7 +59,7 @@ if __name__ == "__main__":
     # np.reshape(satECIMes['a'], (3, simLength))
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Functions.kepler, hx=Functions.h_x, points=points)
+    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=functions.kepler, hx=functions.h_x, points=points)
           for i in range(num_sats)}
 
     for i in range(num_sats):
@@ -130,7 +130,7 @@ if __name__ == "__main__":
                     "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = Functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
+                jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
                                                      func_params, delta)
 
                 kf[c].R = jacobian @ covAER @ jacobian.T
