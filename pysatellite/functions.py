@@ -6,7 +6,7 @@ Created on Thu Jul 8 17:39:18 2021
 """
 
 import numpy as np
-from pysatellite import Transformations, Functions
+from pysatellite import transformations, functions
 import pysatellite.config as cfg
 
 t = cfg.stepLength
@@ -24,10 +24,10 @@ def h_x(x_state):
 
 def jacobian_finder(func_name, func_variable, func_params, delta):
 
-    if func_name in dir(Transformations):
-        func = getattr(Transformations, func_name)
-    elif func_name in dir(Functions):
-        func = getattr(Functions, func_name)
+    if func_name in dir(transformations):
+        func = getattr(transformations, func_name)
+    elif func_name in dir(functions):
+        func = getattr(functions, func_name)
     else:
         raise Exception('Function not found in jf')
     
