@@ -56,6 +56,16 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
 
 
 def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
+    """
+    Generates circular orbits using Kepler's equation
+    :param num_sats: Number of satellites to generate
+    :param sim_length: Number of time-steps
+    :param step_length: Length of each time-step in seconds
+    :param sens: sensor object used to generate measurements
+    :param trans_earth: Boolean, transparent earth
+
+    :return: sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_visible
+    """
     # Define sat pos in ECI and convert to AER
     # radArr: radii for each sat metres
     # omegaArr: orbital rate for each sat rad/s
@@ -100,6 +110,16 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
 
 
 def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
+    """
+        Generates orbits from orbital elements
+        :param num_sats: Number of satellites to generate
+        :param sim_length: Number of time-steps
+        :param step_length: Length of each time-step in seconds
+        :param sens: sensor object used to generate measurements
+        :param trans_earth: Boolean, transparent earth
+
+        :return: sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_visible
+        """
     # From poliastro and ssa-gym
     RE_eq = cfg.WGS['SemimajorAxis']
     k = mu
