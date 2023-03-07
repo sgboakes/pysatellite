@@ -14,7 +14,7 @@ import pysatellite.config as cfg
 if __name__ == "__main__":
 
     plt.close('all')
-    # np.random.seed(3)  # Will seeding work with acceptance model in orbit generation?
+    np.random.seed(4)  # Will seeding work with acceptance model in orbit generation?
     # ~~~~ Variables
 
     sin = np.sin
@@ -40,18 +40,17 @@ if __name__ == "__main__":
     simLength = cfg.simLength
     simLength = 200
     stepLength = cfg.stepLength
-    trans_earth = False
 
     num_sats = 10
 
     # ~~~~ Satellite Conversion METHOD 1
-    # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
-    #                                                                              sens, trans_earth)
+    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
+                                                                                 sens)
 
     # ~~~~ Satellite Conversion METHOD 2
     # return orbital elements of satellites?
-    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                            sens)
+    # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
+    #                                                                         sens)
 
     # ~~~~~ Globe Plot
 
@@ -89,3 +88,11 @@ if __name__ == "__main__":
     #         plt.plot(i, elements[c][j], 'x')
     #
     #     plt.show()
+
+    # Check for if satellite visible at all time-steps
+    # for i in range(10000):
+    #     np.random.seed(i)
+    #     ECI, AER, ECIMes, AERMes, Visible = orbit_gen.circular_orbits(num_sats, simLength, stepLength, sens)
+    #
+    #     if not np.isnan(ECIMes['a']).any():
+    #         print(i)
