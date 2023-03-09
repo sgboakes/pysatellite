@@ -96,14 +96,12 @@ if __name__ == "__main__":
         t_sec = float((t_sp[0]))*24*3600 + float(t_sp[1])*3600 + float(t_sp[2])*60 + float(t_sp[3])
         times_ind.append(round(t_sec/stepLength)-1)
 
-
     # Define sat pos in ECI and convert to AER
     # radArr: radii for each sat metres
     # omegaArr: orbital rate for each sat rad/s
     # thetaArr: inclination angle for each sat rad
     # kArr: normal vector for each sat metres
     num_sats = 1
-
 
     for i in range(num_sats):
         c = chr(i+97)

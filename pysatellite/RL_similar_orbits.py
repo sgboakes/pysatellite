@@ -178,7 +178,8 @@ if __name__ == "__main__":
                 "sensLLA[1]": sensLLA[1]
             }
 
-            jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+            jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params,
+                                                 delta)
 
             # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
             covECI = jacobian @ covAER @ jacobian.T

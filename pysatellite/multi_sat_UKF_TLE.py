@@ -155,7 +155,6 @@ if __name__ == "__main__":
             # Calc e, pos, vel for each sat at each t
             e[c][j], r[c][j], v[c][j] = tle_data[c].sgp4(jd[j], fr[j])
 
-
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
     kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
           for i in range(num_sats)}

@@ -103,7 +103,12 @@ class UKF:
     def predict(self, timestep, inputs=[]):
         """
         performs a prediction step
-        :param timestep: float, amount of time since last prediction
+        Parameters
+        ----------
+        timestep : float
+            amount of time since last prediction
+        inputs : list
+            state inputs?
         """
 
         sigmas_out = np.array([self.iterate(x, timestep, inputs) for x in self.sigmas.T]).T

@@ -14,7 +14,7 @@ import pysatellite.orbit_gen as orbit_gen
 if __name__ == "__main__":
 
     plt.close('all')
-    # np.random.seed(2)
+    np.random.seed(3)
     # ~~~~ Variables
 
     sin = np.sin
@@ -34,9 +34,10 @@ if __name__ == "__main__":
     sens = Sensor()
 
     simLength = cfg.simLength
+    simLength = 50
     stepLength = cfg.stepLength
 
-    num_sats = 4
+    num_sats = 25
 
     # ~~~~ Satellite Conversion METHOD 1
     # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
@@ -56,6 +57,7 @@ if __name__ == "__main__":
     # satECIMes['a'] = satECIMes['a'].T
     # np.reshape(satECIMes['a'], (3, simLength))
 
+    # Initialising filtering states from first measurement
     satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
     for i in range(num_sats):
         c = chr(i + 97)
@@ -123,7 +125,8 @@ if __name__ == "__main__":
                     "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params, delta)
+                jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params,
+                                                     delta)
 
                 # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
                 covECI = jacobian @ covAER @ jacobian.T
@@ -142,28 +145,28 @@ if __name__ == "__main__":
 
     # ~~~~~ Plotting
 
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisible[c]:
-            fig, (ax1, ax2, ax3) = plt.subplots(3)
-            axs = [ax1, ax2, ax3]
-            fig.suptitle('Satellite {sat}'.format(sat=i))
-            ax1.plot(satECI[c][0, :])
-            # ax1.plot(satECIMes[c][0,:], 'r.')
-            ax1.plot(totalStates[c][0, :])
-            ax1.set(ylabel='$X_{ECI}$, metres')
-
-            ax2.plot(satECI[c][1, :])
-            # ax2.plot(satECIMes[c][1,:], 'r.')
-            ax2.plot(totalStates[c][1, :])
-            ax2.set(ylabel='$Y_{ECI}$, metres')
-
-            ax3.plot(satECI[c][2, :])
-            # ax3.plot(satECIMes[c][2,:], 'r.')
-            ax3.plot(totalStates[c][2, :])
-            ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
-
-            plt.show()
+    # for i in range(num_sats):
+    #     c = chr(i + 97)
+    #     if satVisible[c]:
+    #         fig, (ax1, ax2, ax3) = plt.subplots(3)
+    #         axs = [ax1, ax2, ax3]
+    #         fig.suptitle('Satellite {sat}'.format(sat=i))
+    #         ax1.plot(satECI[c][0, :])
+    #         # ax1.plot(satECIMes[c][0,:], 'r.')
+    #         ax1.plot(totalStates[c][0, :])
+    #         ax1.set(ylabel='$X_{ECI}$, metres')
+    #
+    #         ax2.plot(satECI[c][1, :])
+    #         # ax2.plot(satECIMes[c][1,:], 'r.')
+    #         ax2.plot(totalStates[c][1, :])
+    #         ax2.set(ylabel='$Y_{ECI}$, metres')
+    #
+    #         ax3.plot(satECI[c][2, :])
+    #         # ax3.plot(satECIMes[c][2,:], 'r.')
+    #         ax3.plot(totalStates[c][2, :])
+    #         ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
+    #
+    #         plt.show()
 
     # ~~~~~ Error plots
 
