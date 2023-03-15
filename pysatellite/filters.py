@@ -42,7 +42,7 @@ def ekf(x_state, cov_state, measurement, state_trans_matrix, measure_matrix, mea
     x_state = functions.kepler(x_state)
     cov_state = state_trans_matrix @ cov_state @ state_trans_matrix.T + process_noise
     
-    # If no measurement made, can't calculate K
+    # If no measurement made, can't calculate K - do prediction only
     if (not np.any(measurement)) or (np.isnan(measurement).all()):
         return x_state, cov_state
     
