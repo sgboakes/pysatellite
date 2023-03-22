@@ -19,7 +19,7 @@ sqrt = np.sqrt
 mu = cfg.mu
 
 
-def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens, trans_earth):
+def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens, trans_earth=False):
     """
     Add small deviations for measurements
     Using calculated max measurement deviations for LT:
