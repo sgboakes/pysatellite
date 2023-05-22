@@ -158,6 +158,48 @@ def aer_to_ned(pos_aer):
     return pos_ned
 
 
+def body_to_earth(body, psi, theta, phi):
+    """
+    Function for converting body coordinates to earth coordinates through
+    rotations in azimuth, elevation, and roll
+
+    ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
+    body: A 3x1 vector containing the x, y, and z body positions,
+            respectively.
+
+    psi: Angle for rotating in azimuth in radians.
+
+    theta: Angle for rotating in elevation in radians.
+
+    phi: Angle for rotating in roll in radians.
+
+    ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
+    earth: A 3x1 vector containing the position in earth coordinates.
+    """
+    # Psi = azimuth
+    # Theta = elevation
+    # Phi = roll
+
+    rot_az = np.array([[cos(psi), sin(psi), 0],
+                       [-sin(psi), cos(psi), 0],
+                       [0, 0, 1]])
+
+    rot_elev = np.array([[cos(theta), 0, -sin(theta)],
+                         [0, 1, 0],
+                         [sin(theta), 0, cos(theta)]])
+
+    rot_roll = np.array([[1, 0, 0],
+                         [0, cos(phi), sin(phi)],
+                         [0, -sin(phi), cos(phi)]])
+
+    # THIS IS EARTH -> BODY
+    # rotated_scope = rot_roll @ rot_elev @ rot_az @ telescope
+
+    # THIS IS BODY -> EARTH
+    earth = rot_az.T @ rot_elev.T @ rot_roll.T @ body
+
+    return earth
+
 def ecef_to_aer(pos_ecef, ori_ecef, ori_lat, ori_lon):
     """
     Function for converting ECEF position to Azimuth/Elevation/Range
@@ -596,6 +638,23 @@ def lla_to_eci(pos_lla, step_length, step_num):
     pos_eci = rotation_matrix @ pos_ecef
     return pos_eci
 
+
+def ned_to_ae(ned):
+    """
+    Function for converting local North/East/Down to unit Az/Elev
+
+    ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
+    ned: A 1x3 or 3x1 vector containing the north, east, and down positions,
+            respectively.
+
+    ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
+    azel: A 2x1 vector containing the Azimuth and Elevation
+        positions in radians, respectively.
+    """
+    psi_ae = np.arctan2(ned[1], ned[0])
+    theta_ae = -np.arcsin(ned[2])
+    azel = [psi_ae, theta_ae]
+    return azel
 
 def ned_to_aer(pos_ned):
     """

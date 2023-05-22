@@ -180,6 +180,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     ang_mes_dev, range_mes_dev = 1e-6, 20
 
     # TODO: Keep velocity part of ECI?
+    # TODO: Add coe_to_rv to transformations.py
     # Keep for now, need to adjust either function calls/function usage
     while not complete:
         # Expand for multiple satellites?
