@@ -19,6 +19,15 @@ e = WGS["Eccentricity"]
 ePrime = np.sqrt((a**2 - b**2) / b**2)  # Square of second eccentricity
 
 
+def ae_to_ned(ae):
+    psi = ae[0]
+    theta = ae[1]
+    ned = [cos(theta)*cos(psi),
+          cos(theta)*sin(psi), 
+          -sin(theta)]
+
+    return ned
+
 def aer_to_eci(pos_aer, step_length, step_num, ori_ecef, ori_lat, ori_lon):
     """
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
