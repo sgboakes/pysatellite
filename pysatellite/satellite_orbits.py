@@ -41,16 +41,20 @@ if __name__ == "__main__":
     simLength = 200
     stepLength = cfg.stepLength
 
-    num_sats = 10
+    num_sats = 20
 
-    # ~~~~ Satellite Conversion METHOD 1
-    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
-                                                                                 sens)
+    # ~~~~ Satellite Generation METHOD 1
+    # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
+    #                                                                              sens)
 
-    # ~~~~ Satellite Conversion METHOD 2
+    # ~~~~ Satellite Generation METHOD 2
     # return orbital elements of satellites?
     # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
     #                                                                         sens)
+
+    # ~~~~ Satellite Generation METHOD 3
+    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.swarm_orbits(num_sats, simLength, stepLength,
+                                                                                 sens)
 
     # ~~~~~ Globe Plot
 

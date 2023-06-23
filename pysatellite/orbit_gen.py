@@ -110,6 +110,57 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     k_arr = np.ones((num_sats, 3), dtype='float64')
     k_arr[:, :] = 1 / np.sqrt(3)
 
+    sat_eci, sat_aer, sat_vis_check = rodrigues_formula(num_sats, sim_length, step_length, sens, rad_arr, omega_arr,
+                                                        theta_arr, k_arr)
+
+    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens,
+                                                trans_earth)
+
+    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
+
+
+def swarm_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
+    """
+    Generates circular orbits using Kepler's equation
+
+    Parameters
+    ----------
+    num_sats : int
+        Number of satellites to generate
+    sim_length : int
+        Number of time-steps
+    step_length : int
+        Length of each time-step in seconds
+    sens : class
+        sensor object used to generate measurements
+    trans_earth : bool
+        Boolean, transparent earth
+
+    Returns
+    -------
+    sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_visible
+    """
+    # Define sat pos in ECI and convert to AER
+    # radArr: radii for each sat metres
+    # omegaArr: orbital rate for each sat rad/s
+    # thetaArr: inclination angle for each sat rad
+    # kArr: normal vector for each sat metres
+    rad_arr = 7e6 * np.ones((num_sats, 1), dtype='float64')
+    omega_arr = 1 / np.sqrt(rad_arr ** 3 / mu)
+    theta_arr = np.array((0.2 * np.random.rand(num_sats, 1)), dtype='float64')
+    k_arr = np.zeros((num_sats, 3), dtype='float64')
+    k_arr[:, 0] = 1
+
+    sat_eci, sat_aer, sat_vis_check = rodrigues_formula(num_sats, sim_length, step_length, sens, rad_arr, omega_arr,
+                                                        theta_arr, k_arr)
+
+    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens,
+                                                trans_earth)
+
+    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
+
+
+def rodrigues_formula(num_sats, sim_length, step_length, sens, r, omega, theta, k):
     # Make data structures
     sat_eci = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
     sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
@@ -118,28 +169,21 @@ def circular_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     for i in range(num_sats):
         c = chr(i + 97)
         for j in range(sim_length):
-            v = np.array([[rad_arr[i] * sin(omega_arr[i] * (j + 1) * step_length)],
+            v = np.array([[r[i] * sin(omega[i] * (j + 1) * step_length)],
                           [0],
-                          [rad_arr[i] * cos(omega_arr[i] * (j + 1) * step_length)]], dtype='float64')
+                          [r[i] * cos(omega[i] * (j + 1) * step_length)]], dtype='float64')
 
-            sat_eci[c][:, j] = (v @ cos(theta_arr[i])) + (np.cross(k_arr[i, :].T, v.T) * sin(theta_arr[i])) + (
-                    k_arr[i, :].T * np.dot(k_arr[i, :].T, v) * (1 - cos(theta_arr[i])))
+            sat_eci[c][:, j] = (v @ cos(theta[i])) + (np.cross(k[i, :].T, v.T) * sin(theta[i])) + (
+                    k[i, :].T * np.dot(k[i, :].T, v) * (1 - cos(theta[i])))
 
             sat_aer[c][:, j:j + 1] = transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
                                                                 sens.LLA[0], sens.LLA[1])
-
-            # if not trans_earth:
-            #     if sat_aer[c][1, j] < 0:
-            #         sat_aer[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
 
         if np.isnan(sat_aer[c]).all():
             print('Satellite {s} is not observable'.format(s=i))
             sat_vis_check[c] = False
 
-    sat_eci_mes, sat_aer_mes = gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens,
-                                                trans_earth)
-
-    return sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_vis_check
+    return sat_eci, sat_aer, sat_vis_check
 
 
 def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
