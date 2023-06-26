@@ -24,7 +24,7 @@ def ae_to_ned(ae):
     theta = ae[1]
     ned = [cos(theta)*cos(psi),
           cos(theta)*sin(psi), 
-          -sin(theta)]
+          sin(theta)]
 
     return ned
 
@@ -193,9 +193,9 @@ def body_to_earth(body, psi, theta, phi):
                        [-sin(psi), cos(psi), 0],
                        [0, 0, 1]])
 
-    rot_elev = np.array([[cos(theta), 0, -sin(theta)],
+    rot_elev = np.array([[cos(theta), 0, sin(theta)],
                          [0, 1, 0],
-                         [sin(theta), 0, cos(theta)]])
+                         [-sin(theta), 0, cos(theta)]])
 
     rot_roll = np.array([[1, 0, 0],
                          [0, cos(phi), sin(phi)],
@@ -661,7 +661,7 @@ def ned_to_ae(ned):
         positions in radians, respectively.
     """
     psi_ae = np.arctan2(ned[1], ned[0])
-    theta_ae = -np.arcsin(ned[2])
+    theta_ae = np.arcsin(ned[2])
     azel = [psi_ae, theta_ae]
     return azel
 
