@@ -1,22 +1,12 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Oct  8 14:36:04 2021
-
-@author: sgboakes
-"""
-import urllib.request
+import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-import pandas as pd
 from pysatellite import transformations, functions as Funcs
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
-import astropy.coordinates as coord
-import astropy.units as u
-from astropy.time import Time
-from sgp4.api import Satrec, SGP4_ERRORS, jday
+from skyfield.api import EarthSatellite, load, wgs84
 
 if __name__ == "__main__":
 
@@ -28,126 +18,42 @@ if __name__ == "__main__":
     cos = np.cos
     pi = np.float64(np.pi)
 
-    sensLat = np.float64(28.300697)
-    sensLon = np.float64(-16.509675)
-    sensAlt = np.float64(2390)
-    sensLLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
-    # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = transformations.lla_to_ecef(sensLLA)
-    sensECEF.shape = (3, 1)
+
+    class Sensor:
+        def __init__(self):
+            # Using Liverpool Telescope as location
+            self.LLA = np.array([[np.deg2rad(28.300697)], [np.deg2rad(-16.509675)], [2390]], dtype='float64')
+            # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
+            self.ECEF = transformations.lla_to_ecef(self.LLA)
+            self.ECEF.shape = (3, 1)
+            self.AngVar = 1e-6
+            self.RngVar = 20
+
+
+    sens = Sensor()
 
     simLength = cfg.simLength
+    simLength = 50
     stepLength = cfg.stepLength
 
-    mu = cfg.mu
-    trans_earth = False
+    num_sats = 25
 
-    # ~~~~ Satellite Conversion
+    # ~~~~~~ USING TLE DATA FROM space-track
+    file = os.getcwd() + '/space-track_leo_tles.txt'
 
-    # Define sat pos in ECI and convert to AER
-    # radArr: radii for each sat metres
-    # omegaArr: orbital rate for each sat rad/s
-    # thetaArr: inclination angle for each sat rad
-    # # kArr: normal vector for each sat metres
-    # num_sats = 40
-    # radArr = 7e6 * np.ones((num_sats, 1), dtype='float64')
-    # omegaArr = 1 / np.sqrt(radArr ** 3 / mu)
-    # thetaArr = np.array((2 * pi * np.random.rand(num_sats, 1)), dtype='float64')
-    # kArr = np.ones((num_sats, 3), dtype='float64')
-    # kArr[:, :] = 1 / np.sqrt(3)
-    #
-    # # Make data structures
-    # satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # satVisCheck = {chr(i + 97): True for i in range(num_sats)}
-    #
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     for j in range(simLength):
-    #         v = np.array([[radArr[i] * sin(omegaArr[i] * (j + 1) * stepLength)],
-    #                       [0],
-    #                       [radArr[i] * cos(omegaArr[i] * (j + 1) * stepLength)]], dtype='float64')
-    #
-    #         satECI[c][:, j] = (v @ cos(thetaArr[i])) + (np.cross(kArr[i, :].T, v.T) * sin(thetaArr[i])) + (
-    #                            kArr[i, :].T * np.dot(kArr[i, :].T, v) * (1 - cos(thetaArr[i])))
-    #
-    #         satAER[c][:, j:j + 1] = transformations.eci_to_aer(satECI[c][:, j], stepLength, j + 1, sensECEF,
-    #                                                            sensLLA[0], sensLLA[1])
-    #
-    #         if not trans_earth:
-    #             if satAER[c][1, j] < 0:
-    #                 satAER[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
-    #
-    #     if np.isnan(satAER[c]).all():
-    #         print('Satellite {s} is not observable'.format(s=i))
-    #         satVisCheck[c] = False
-    #
-    # # Add small deviations for measurements
-    # # Using calculated max measurement deviations for LT:
-    # # Based on 0.15"/pixel, sat size = 2m, max range = 1.38e7
-    # # sigma = 1/2 * 0.15" for it to be definitely on that pixel
-    # # Add angle devs to Az/Elev, and range devs to Range
-    #
-    # angMeasDev, rangeMeasDev = 1e-6, 20
-    #
-    # satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if satVisCheck[c]:
-    #         satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
-    #         satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
-    #         satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
-    #
-    # satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
-    #     if satVisCheck[c]:
-    #         for j in range(simLength):
-    #             satECIMes[c][:, j:j + 1] = transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
-    #                                                                   sensLLA[0], sensLLA[1])
+    with open(file) as f:
+        tle_lines = f.readlines()
 
-    # ~~~~ Temp ECI measurements from MATLAB
+    tles = {}
+    satellites = {}
+    ts = load.timescale()
+    for i in range(0, len(tle_lines) - 1, 2):
+        tles['{i}'.format(i=int(i / 2))] = [tle_lines[i], tle_lines[i + 1]]
+        satellites['{i}'.format(i=int(i / 2))] = EarthSatellite(line1=tles['{i}'.format(i=int(i / 2))][0],
+                                                                line2=tles['{i}'.format(i=int(i / 2))][1])
 
-    # satECIMes['a'] = pd.read_csv('ECI_mes.txt', delimiter=' ').to_numpy(dtype='float64')
-    # #satECIMes.to_numpy(dtype='float64')
-    # satECIMes['a'] = satECIMes['a'].T
-    # np.reshape(satECIMes['a'], (3, simLength))
-
-    # ~~~~~~ USING TLE DATA FROM CELESTRAK
-    # with open('TLE_stations.txt') as f:
-    #     lines = f.readlines()
-
-    # Download direct from Celestrak
-    lines = []
-    for line in urllib.request.urlopen('https://celestrak.com/NORAD/elements/gp.php?GROUP=stations&FORMAT=tle'):
-        lines.append((line.decode('utf-8')))
-
-    num_sats = int(len(lines) / 3)
-    tle_data = {chr(i+97): [] for i in range(num_sats)}
-    satVisCheck = {chr(i + 97): True for i in range(num_sats)}
-    for i in range(0, len(lines), 3):
-        c = chr(int(i/3)+97)
-        n = lines[i]
-        s = lines[i+1]
-        t = lines[i+2]
-
-        tle_data[c] = Satrec.twoline2rv(s, t)
-
-    # Convert to TEME/ITRS?
-
-    # Vector of times for ~1 day
-    jd, fr = [], []
-
-    # Array of 12 times over 1 day
-    num_hours = 12
-    for i in range(num_hours):
-        jd_temp, fr_temp = jday(2022, 5, 5, i, 0, 0)
-        jd.append(jd_temp)
-        fr.append(fr_temp)
-
-    e = {chr(i+97): np.zeros((num_hours, 1), dtype=np.float64) for i in range(num_sats)}  #
-    r = {chr(i+97): np.zeros((num_hours, 3), dtype=np.float64) for i in range(num_sats)}  # pos (1x3 cartesian)
-    v = {chr(i+97): np.zeros((num_hours, 3), dtype=np.float64) for i in range(num_sats)}  # vel (1x3 cartesian)
+   # Get rough epoch using first satellite
+    epoch = satellites['0'].epoch.utc_datetime()
 
     for i in range(num_sats):
         c = chr(i + 97)
