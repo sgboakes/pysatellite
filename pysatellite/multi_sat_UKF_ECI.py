@@ -59,11 +59,10 @@ if __name__ == "__main__":
     # np.reshape(satECIMes['a'], (3, simLength))
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=functions.kepler, hx=functions.h_x, points=points)
+    kf = {'{i}'.format(i=i): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=functions.kepler, hx=functions.h_x, points=points)
           for i in range(num_sats)}
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECIMes):
         kf[c].x = np.zeros((6, 1))
         if satVisible[c]:
             for j in range(simLength):
@@ -80,8 +79,7 @@ if __name__ == "__main__":
     coefB = np.float64(stepLength ** 2.0 * stdAng ** 2.0)
     coefC = np.float64(0.5 * stepLength ** 3.0 * stdAng ** 2.0)
 
-    for i in range(num_sats):
-        c = chr(i+97)
+    for i, c in enumerate(satVisible):
         if satVisible[c]:
             kf[c].Q = np.array([[coefA, 0, 0, coefC, 0, 0],
                                 [0, coefA, 0, 0, coefC, 0],
@@ -99,16 +97,15 @@ if __name__ == "__main__":
                        [0, 0, rangeMeasDev ** 2]],
                       dtype='float64')
 
-    totalStates = {chr(i + 97): np.zeros((6, simLength)) for i in range(num_sats)}
-    diffState = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    err_X_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Y_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Z_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
+    totalStates = {'{i}'.format(i=i): np.zeros((6, simLength)) for i in range(num_sats)}
+    diffState = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    err_X_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Y_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Z_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
 
     # ~~~~~ Using UKF
     delta = 1e-6
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECIMes):
         if satVisible[c]:
             mesCheck = False
             for j in range(simLength):
@@ -147,8 +144,7 @@ if __name__ == "__main__":
                 # print(satState[c])
 
     # ~~~~~ Plotting
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
+    # for i, c in enumerate(satECI):
     #     if satVisible[c]:
     #         fig, (ax1, ax2, ax3) = plt.subplots(3)
     #         axs = [ax1, ax2, ax3]
@@ -172,8 +168,7 @@ if __name__ == "__main__":
 
     # ~~~~~ Error plots
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(diffState):
         if satVisible[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]

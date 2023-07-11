@@ -57,16 +57,22 @@ if __name__ == "__main__":
     num_sats = len(satellites)
     # Get rough epoch using first satellite
     epoch = satellites['0'].epoch.utc_datetime()
+    # Generate timestamps for each step in simulation
+    timestamps = []
+    for i in range(simLength):
+        timestamps.append(ts.from_datetime(epoch+datetime.timedelta(seconds=i*stepLength)))
 
     # Need a ground truth somehow? Use TLE at each step, then measurements can be TLE plus some WGN?
     # But then propagator will be equal for both ground truth generation and filtering
+    # Think this is fine
 
     satAER = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
     satECI = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
     satVis = {'{i}'.format(i=i): True for i in range(num_sats)}
     for i, c in enumerate(satellites):
         for j in range(simLength):
-            t = ts.from_datetime(epoch+datetime.timedelta(seconds=j*stepLength))
+            # t = ts.from_datetime(epoch+datetime.timedelta(seconds=j*stepLength))
+            t = timestamps[j]
             diff = satellites[c] - bluffton
             topocentric = diff.at(t)
             alt, az, dist = topocentric.altaz()
@@ -76,20 +82,19 @@ if __name__ == "__main__":
 
     satECIMes, satAERMes = orbit_gen.gen_measurements(satAER, num_sats, satVis, simLength, stepLength, sens)
 
-    # satAERVisible = {}
-    # for i, c in enumerate(satAER):
-    #     if all(i > 0 for i in satAER[c][:, 1]):
-    #         satAERVisible[c] = satAER[c]
-    #
-    # file_reduced = os.getcwd() + '/space-track_leo_tles_visible.txt'
-    # with open(file_reduced, 'w') as f:
-    #     for i, c in enumerate(satAERVisible):
-    #         f.writelines(tles[c])
+    satAERVisible = {}
+    for i, c in enumerate(satAER):
+        if all(i > 0 for i in satAER[c][:, 1]):
+            satAERVisible[c] = satAER[c]
+
+    file_reduced = os.getcwd() + '/space-track_leo_tles_visible.txt'
+    with open(file_reduced, 'w') as f:
+        for i, c in enumerate(satAERVisible):
+            f.writelines(tles[c])
 
     # Initialising filtering states from first measurement
-    satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    satState = {'{i}'.format(i=i): np.zeros((6, 1)) for i in range(num_sats)}
+    for i, c in enumerate(satECIMes):
         for j in range(simLength):
             if np.all(np.isnan(satECIMes[c][:, j])):
                 continue
@@ -111,7 +116,7 @@ if __name__ == "__main__":
                           [0, 0, coefC, 0, 0, coefB]],
                          dtype='float64')
 
-    covState = {chr(i + 97): np.float64(1e10) * np.identity(6) for i in range(num_sats)}
+    covState = {'{i}'.format(i=i): np.float64(1e10) * np.identity(6) for i in range(num_sats)}
 
     angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(sens.AngVar * 180 / pi) ** 2, 0, 0],
@@ -121,17 +126,16 @@ if __name__ == "__main__":
 
     measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
 
-    totalStates = {chr(i + 97): np.zeros((6, simLength)) for i in range(num_sats)}
-    diffState = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    err_X_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Y_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Z_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
+    totalStates = {'{i}'.format(i=i): np.zeros((6, simLength)) for i in range(num_sats)}
+    diffState = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    err_X_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Y_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Z_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
 
     # ~~~~~ Using EKF
 
     delta = 1e-6
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECIMes):
         mesCheck = False
         for j in range(simLength):
             while not mesCheck:
@@ -158,7 +162,7 @@ if __name__ == "__main__":
             # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
             covECI = jacobian @ covAER @ jacobian.T
 
-            stateTransMatrix = functions.jacobian_finder("kepler", satState[c], [], delta)
+            stateTransMatrix = functions.jacobian_finder(EarthSatellite.at, satState[c], [], delta)
 
             satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
                                                    measureMatrix, covECI, procNoise)

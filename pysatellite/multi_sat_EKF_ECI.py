@@ -58,9 +58,8 @@ if __name__ == "__main__":
     # np.reshape(satECIMes['a'], (3, simLength))
 
     # Initialising filtering states from first measurement
-    satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    satState = {'{i}'.format(i=i): np.zeros((6, 1)) for i in range(num_sats)}
+    for i, c in enumerate(satState):
         if satVisible[c]:
             for j in range(simLength):
                 if np.all(np.isnan(satECIMes[c][:, j])):
@@ -83,7 +82,7 @@ if __name__ == "__main__":
                           [0, 0, coefC, 0, 0, coefB]],
                          dtype='float64')
 
-    covState = {chr(i + 97): np.float64(1e10) * np.identity(6) for i in range(num_sats)}
+    covState = {'{i}'.format(i=i): np.float64(1e10) * np.identity(6) for i in range(num_sats)}
 
     angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(sens.AngVar * 180 / pi) ** 2, 0, 0],
@@ -93,17 +92,16 @@ if __name__ == "__main__":
 
     measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
 
-    totalStates = {chr(i + 97): np.zeros((6, simLength)) for i in range(num_sats)}
-    diffState = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    err_X_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Y_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Z_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
+    totalStates = {'{i}'.format(i=i): np.zeros((6, simLength)) for i in range(num_sats)}
+    diffState = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    err_X_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Y_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Z_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
 
     # ~~~~~ Using EKF
 
     delta = 1e-6
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECIMes):
         if satVisible[c]:
             mesCheck = False
             for j in range(simLength):
@@ -145,8 +143,7 @@ if __name__ == "__main__":
 
     # ~~~~~ Plotting
 
-    # for i in range(num_sats):
-    #     c = chr(i + 97)
+    # for i, c in enumerate(satECIMes):
     #     if satVisible[c]:
     #         fig, (ax1, ax2, ax3) = plt.subplots(3)
     #         axs = [ax1, ax2, ax3]
@@ -170,8 +167,7 @@ if __name__ == "__main__":
 
     # ~~~~~ Error plots
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(diffState):
         if satVisible[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]

@@ -58,11 +58,10 @@ if __name__ == "__main__":
     num_sats = len(radArr)
 
     # Make data structures
-    satECI = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    satAER = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
+    satECI = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    satAER = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECI):
         for j in range(simLength):
             v = np.array([[radArr[i] * sin(omegaArr[i] * (j + 1) * stepLength)],
                           [0],
@@ -89,16 +88,14 @@ if __name__ == "__main__":
 
     angMeasDev, rangeMeasDev = 1e-6, 20
 
-    satAERMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    satAERMes = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    for i, c in enumerate(satAER):
         satAERMes[c][0, :] = satAER[c][0, :] + (angMeasDev * np.random.randn(1, simLength))
         satAERMes[c][1, :] = satAER[c][1, :] + (angMeasDev * np.random.randn(1, simLength))
         satAERMes[c][2, :] = satAER[c][2, :] + (rangeMeasDev * np.random.randn(1, simLength))
 
-    satECIMes = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    satECIMes = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    for i, c in enumerate(satAERMes):
         for j in range(simLength):
             satECIMes[c][:, j:j + 1] = transformations.aer_to_eci(satAERMes[c][:, j], stepLength, j+1, sensECEF,
                                                                   sensLLA[0], sensLLA[1])
@@ -110,9 +107,8 @@ if __name__ == "__main__":
     # satECIMes['a'] = satECIMes['a'].T
     # np.reshape(satECIMes['a'], (3, simLength))
 
-    satState = {chr(i + 97): np.zeros((6, 1)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    satState = {'{i}'.format(i=i): np.zeros((6, 1)) for i in range(num_sats)}
+    for i, c in enumerate(satECIMes):
         for j in range(simLength):
             if np.all(np.isnan(satECIMes[c][:, j])):
                 continue
@@ -134,9 +130,8 @@ if __name__ == "__main__":
                           [0, 0, coefC, 0, 0, coefB]],
                          dtype='float64')
 
-    covState = {chr(i + 97): np.zeros((6, 6)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    covState = {'{i}'.format(i=i): np.zeros((6, 6)) for i in range(num_sats)}
+    for i, c in enumerate(covState):
         covState[c] = np.float64(1e10) * np.identity(6)
 
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
@@ -147,17 +142,16 @@ if __name__ == "__main__":
 
     measureMatrix = np.append(np.identity(3), np.zeros((3, 3)), axis=1)
 
-    totalStates = {chr(i + 97): np.zeros((6, simLength)) for i in range(num_sats)}
-    diffState = {chr(i + 97): np.zeros((3, simLength)) for i in range(num_sats)}
-    err_X_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Y_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
-    err_Z_ECI = {chr(i + 97): np.zeros(simLength) for i in range(num_sats)}
+    totalStates = {'{i}'.format(i=i): np.zeros((6, simLength)) for i in range(num_sats)}
+    diffState = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    err_X_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Y_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
+    err_Z_ECI = {'{i}'.format(i=i): np.zeros(simLength) for i in range(num_sats)}
 
     # ~~~~~ Using EKF
 
     delta = 1e-6
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECIMes):
         mesCheck = False
         for j in range(simLength):
             while not mesCheck:
@@ -198,8 +192,7 @@ if __name__ == "__main__":
 
     # ~~~~~ Plotting
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECI):
         fig, (ax1, ax2, ax3) = plt.subplots(3)
         axs = [ax1, ax2, ax3]
         fig.suptitle('Satellite {sat}'.format(sat=c))
@@ -222,8 +215,7 @@ if __name__ == "__main__":
 
     # ~~~~~ Error plots
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(diffState):
         fig, (ax1, ax2, ax3) = plt.subplots(3)
         axs = [ax1, ax2, ax3]
         fig.suptitle('Satellite {sat} Errors'.format(sat=c))
@@ -248,8 +240,7 @@ if __name__ == "__main__":
     ax.view_init(60, 35)
     ax.set_aspect('auto')
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECI):
         ax.plot3D(satECI[c][0, :], satECI[c][1, :], satECI[c][2, :])
 
     plt.show()
@@ -261,8 +252,7 @@ if __name__ == "__main__":
     ax.set_theta_direction(-1)  # theta increasing clockwise
     ax.set_rlim(90, 0, 1)
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satAER):
         ax.plot(satAER[c][0, :], np.rad2deg(satAER[c][1, :]), 'x-')
 
     plt.show()

@@ -63,8 +63,7 @@ if __name__ == "__main__":
     ax.view_init(45, 35)
     ax.set_aspect('auto')
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECI):
         ax.plot3D(satECI[c][0, :], satECI[c][1, :], satECI[c][2, :])
 
     plt.show()
@@ -76,8 +75,7 @@ if __name__ == "__main__":
     ax.set_theta_direction(-1)  # theta increasing clockwise
     ax.set_rlim(90, 0, 1)
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satAER):
         ax.plot(satAER[c][0, :], np.rad2deg(satAER[c][1, :]), 'x-')
 
     plt.show()
@@ -87,8 +85,7 @@ if __name__ == "__main__":
     # or could remove check for if elev > 0 for each satellite and use KDE sampling?
     # for j in range(len(elements[0])):
     #     plt.figure()
-    #     for i in range(num_sats):
-    #         c = chr(i + 97)
+    #     for i, c in enumerate(elements):
     #         plt.plot(i, elements[c][j], 'x')
     #
     #     plt.show()

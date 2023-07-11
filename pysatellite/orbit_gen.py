@@ -49,27 +49,24 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
     sat_eci_mes, sat_aer_mes
     """
 
-    sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    sat_aer_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    for i, c in enumerate(sat_aer):
         if sat_vis_check[c]:
             sat_aer_mes[c][0, :] = sens.AngVar * np.random.randn(sim_length,) + sat_aer[c][0, :]
             sat_aer_mes[c][1, :] = sens.AngVar * np.random.randn(sim_length,) + sat_aer[c][1, :]
             sat_aer_mes[c][2, :] = sens.RngVar * np.random.randn(sim_length,) + sat_aer[c][2, :]
 
-    sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    for i in range(num_sats):
-        c = chr(i + 97)
+    sat_eci_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    for i, c in enumerate(sat_aer_mes):
         if sat_vis_check[c]:
             for j in range(sim_length):
                 sat_eci_mes[c][:, j:j + 1] = transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
                                                                         sens.ECEF, sens.LLA[0], sens.LLA[1])
 
     # Making NaN measurements where elevation < 0
-    # Think of more efficient way to do this? Vectorisation at top is good, implement something similar here?
+    # TODO: Think of more efficient way to do this? Vectorisation at top is good, implement something similar here?
     if not trans_earth:
-        for i in range(num_sats):
-            c = chr(i+97)
+        for i, c in enumerate(sat_aer_mes):
             for j in range(sim_length):
                 if sat_aer[c][1, j] < 0:
                     sat_aer_mes[c][:, j:j + 1] = np.array([[np.nan], [np.nan], [np.nan]])
@@ -162,12 +159,11 @@ def swarm_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
 
 def rodrigues_formula(num_sats, sim_length, step_length, sens, r, omega, theta, k):
     # Make data structures
-    sat_eci = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
+    sat_eci = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_aer = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_vis_check = {'{i}'.format(i=i): True for i in range(num_sats)}
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(sat_eci):
         for j in range(sim_length):
             v = np.array([[r[i] * sin(omega[i] * (j + 1) * step_length)],
                           [0],
@@ -214,12 +210,12 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     complete = False
     sat_counter = 0
     reject_counter = 0
-    sat_eci = {chr(i + 97): np.zeros((6, sim_length)) for i in range(num_sats)}
-    sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
-    elements = {chr(i + 97): [] for i in range(num_sats)}
+    sat_eci = {'{i}'.format(i=i): np.zeros((6, sim_length)) for i in range(num_sats)}
+    sat_aer = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_eci_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_aer_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_vis_check = {'{i}'.format(i=i): True for i in range(num_sats)}
+    elements = {'{i}'.format(i=i): [] for i in range(num_sats)}
 
     ang_mes_dev, range_mes_dev = 1e-6, 20
 
@@ -269,7 +265,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
         # if lla[2, :].all() > 300*1000:
         if np.all(lla[2, :] > 300*1000):
             if max(aer[1, :]) > np.deg2rad(15):
-                c = chr(sat_counter + 97)
+                c = str(sat_counter)
                 # sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
                 sat_eci[c] = eci
                 sat_aer[c] = aer
@@ -355,12 +351,12 @@ def coe_orbits2(num_sats, sim_length, step_length, sens, trans_earth=False):
     complete = False
     sat_counter = 0
     reject_counter = 0
-    sat_eci = {chr(i + 97): np.zeros((6, sim_length)) for i in range(num_sats)}
-    sat_aer = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_eci_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_aer_mes = {chr(i + 97): np.zeros((3, sim_length)) for i in range(num_sats)}
-    sat_vis_check = {chr(i + 97): True for i in range(num_sats)}
-    elements = {chr(i + 97): [] for i in range(num_sats)}
+    sat_eci = {'{i}'.format(i=i): np.zeros((6, sim_length)) for i in range(num_sats)}
+    sat_aer = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_eci_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_aer_mes = {'{i}'.format(i=i): np.zeros((3, sim_length)) for i in range(num_sats)}
+    sat_vis_check = {'{i}'.format(i=i): True for i in range(num_sats)}
+    elements = {'{i}'.format(i=i): [] for i in range(num_sats)}
 
     # TODO: Keep velocity part of ECI?
     # Keep for now, need to adjust either function calls/function usage
@@ -407,7 +403,7 @@ def coe_orbits2(num_sats, sim_length, step_length, sens, trans_earth=False):
         # if lla[2, :].all() > 300*1000:
         if np.all(lla[2, :] > 300 * 1000):
             if max(aer[1, :]) > np.deg2rad(15):
-                c = chr(sat_counter + 97)
+                c = sat_counter
                 # sat_eci[c] = eci[0:3, :]  # DO I WANT TO DO THIS
                 sat_eci[c] = eci
                 sat_aer[c] = aer
