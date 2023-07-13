@@ -2,11 +2,12 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import transformations, functions as Funcs
+from pysatellite import transformations, functions as funcs, orbit_gen
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
 from skyfield.api import EarthSatellite, load, wgs84
+import datetime
 
 if __name__ == "__main__":
 
@@ -31,15 +32,16 @@ if __name__ == "__main__":
 
 
     sens = Sensor()
+    bluffton = wgs84.latlon(28.300697, -16.509675, 2390)
 
-    simLength = cfg.simLength
+    # simLength = cfg.simLength
     simLength = 50
     stepLength = cfg.stepLength
 
     num_sats = 25
 
     # ~~~~~~ USING TLE DATA FROM space-track
-    file = os.getcwd() + '/space-track_leo_tles.txt'
+    file = os.getcwd() + '/space-track_leo_tles_visible.txt'
 
     with open(file) as f:
         tle_lines = f.readlines()
@@ -52,23 +54,37 @@ if __name__ == "__main__":
         satellites['{i}'.format(i=int(i / 2))] = EarthSatellite(line1=tles['{i}'.format(i=int(i / 2))][0],
                                                                 line2=tles['{i}'.format(i=int(i / 2))][1])
 
-   # Get rough epoch using first satellite
+    num_sats = len(satellites)
+    # Get rough epoch using first satellite
     epoch = satellites['0'].epoch.utc_datetime()
+    # Generate timestamps for each step in simulation
+    timestamps = []
+    for i in range(simLength):
+        timestamps.append(ts.from_datetime(epoch + datetime.timedelta(seconds=i * stepLength)))
 
-    for i in range(num_sats):
-        c = chr(i + 97)
-        for j in range(num_hours):
-            # Calc e, pos, vel for each sat at each t
-            e[c][j], r[c][j], v[c][j] = tle_data[c].sgp4(jd[j], fr[j])
+    satAER = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    satECI = {'{i}'.format(i=i): np.zeros((3, simLength)) for i in range(num_sats)}
+    satVis = {'{i}'.format(i=i): True for i in range(num_sats)}
+    for i, c in enumerate(satellites):
+        for j in range(simLength):
+            # t = ts.from_datetime(epoch+datetime.timedelta(seconds=j*stepLength))
+            t = timestamps[j]
+            diff = satellites[c] - bluffton
+            topocentric = diff.at(t)
+            alt, az, dist = topocentric.altaz()
+            satAER[c][:, j] = [az.radians, alt.radians, dist.m]
+            satECI[c][:, j] = np.reshape(transformations.aer_to_eci(satAER[c][:, j], stepLength, j, sens.ECEF,
+                                                                    sens.LLA[0], sens.LLA[1]), (3,))
+
+    satECIMes, satAERMes = orbit_gen.gen_measurements(satAER, num_sats, satVis, simLength, stepLength, sens)
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
+    kf = {'{i}'.format(i=i): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=funcs.kepler, hx=funcs.h_x, points=points)
           for i in range(num_sats)}
 
-    for i in range(num_sats):
-        c = chr(i + 97)
+    for i, c in enumerate(satECI):
         kf[c].x = np.zeros((6, 1))
-        if satVisCheck[c]:
+        if satVis[c]:
             for j in range(simLength):
                 if np.all(np.isnan(satECIMes[c][:, j])):
                     continue
@@ -83,9 +99,8 @@ if __name__ == "__main__":
     coefB = np.float64(stepLength ** 2.0 * stdAng ** 2.0)
     coefC = np.float64(0.5 * stepLength ** 3.0 * stdAng ** 2.0)
 
-    for i in range(num_sats):
-        c = chr(i+97)
-        if satVisCheck[c]:
+    for i, c in enumerate(satVis):
+        if satVis[c]:
             kf[c].Q = np.array([[coefA, 0, 0, coefC, 0, 0],
                                 [0, coefA, 0, 0, coefC, 0],
                                 [0, 0, coefA, 0, 0, coefC],
@@ -116,9 +131,8 @@ if __name__ == "__main__":
 
     # ~~~~~ Using UKF
     delta = 1e-6
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisCheck[c]:
+    for i, c in enumerate(satECIMes):
+        if satVis[c]:
             mesCheck = False
             for j in range(simLength):
                 while not mesCheck:
@@ -134,12 +148,12 @@ if __name__ == "__main__":
                 func_params = {
                     "stepLength": stepLength,
                     "count": j + 1,
-                    "sensECEF": sensECEF,
-                    "sensLLA[0]": sensLLA[0],
-                    "sensLLA[1]": sensLLA[1]
+                    "sensECEF": sens.ECEF,
+                    "sensLLA[0]": sens.LLA[0],
+                    "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = Funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
+                jacobian = funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
                                                  func_params, delta)
 
                 kf[c].R = jacobian @ covAER @ jacobian.T
@@ -156,9 +170,8 @@ if __name__ == "__main__":
                 # print(satState[c])
 
     # ~~~~~ Plotting
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisCheck[c]:
+    for i, c in enumerate(satECI):
+        if satVis[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]
             fig.suptitle('Satellite {sat}'.format(sat=i))
@@ -181,9 +194,8 @@ if __name__ == "__main__":
 
     # ~~~~~ Error plots
 
-    for i in range(num_sats):
-        c = chr(i + 97)
-        if satVisCheck[c]:
+    for i, c in enumerate(diffState):
+        if satVis[c]:
             fig, (ax1, ax2, ax3) = plt.subplots(3)
             axs = [ax1, ax2, ax3]
             fig.suptitle('Satellite {sat} Errors'.format(sat=i))
