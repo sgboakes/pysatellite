@@ -14,7 +14,7 @@ import pysatellite.orbit_gen as orbit_gen
 if __name__ == "__main__":
 
     plt.close('all')
-    np.random.seed(3)
+    np.random.seed(4)
     # ~~~~ Variables
 
     sin = np.sin
@@ -40,12 +40,10 @@ if __name__ == "__main__":
     num_sats = 25
 
     # ~~~~ Satellite Conversion METHOD 1
-    # satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength,
-    #                                                                              sens)
+    satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength, sens)
 
     # ~~~~ Satellite Conversion METHOD 2
-    satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength,
-                                                                            sens)
+    # satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.coe_orbits(num_sats, simLength, stepLength, sens)
 
     for i, c in enumerate(satECI):
         satECI[c] = satECI[c][0:3, :]
@@ -100,7 +98,6 @@ if __name__ == "__main__":
 
     # ~~~~~ Using EKF
 
-    delta = 1e-6
     for i, c in enumerate(satECIMes):
         if satVisible[c]:
             mesCheck = False
@@ -123,13 +120,13 @@ if __name__ == "__main__":
                     "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params,
-                                                     delta)
+                jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),
+                                                     func_params)
 
                 # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
                 covECI = jacobian @ covAER @ jacobian.T
 
-                stateTransMatrix = functions.jacobian_finder("kepler", satState[c], [], delta)
+                stateTransMatrix = functions.jacobian_finder(functions.kepler, satState[c], [])
 
                 satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
                                                        measureMatrix, covECI, procNoise)
@@ -167,21 +164,37 @@ if __name__ == "__main__":
 
     # ~~~~~ Error plots
 
+    # for i, c in enumerate(diffState):
+    #     if satVisible[c]:
+    #         fig, (ax1, ax2, ax3) = plt.subplots(3)
+    #         axs = [ax1, ax2, ax3]
+    #         fig.suptitle('Satellite {sat} Errors'.format(sat=i))
+    #         ax1.plot(err_X_ECI[c])
+    #         ax1.plot(np.abs(diffState[c][0, :]))
+    #         ax1.set(ylabel='$X_{ECI}$, metres')
+    #
+    #         ax2.plot(err_Y_ECI[c])
+    #         ax2.plot(np.abs(diffState[c][1, :]))
+    #         ax2.set(ylabel='$Y_{ECI}$, metres')
+    #
+    #         ax3.plot(err_Z_ECI[c])
+    #         ax3.plot(np.abs(diffState[c][2, :]))
+    #         ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
+    #
+    #         plt.show()
+
+    # ~~~~~ Combined error plot
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3)
+    axs = [ax1, ax2, ax3]
+    fig.suptitle('Satellite Errors')
+    ax1.set(ylabel='$X_{ECI}$, metres')
+    ax2.set(ylabel='$Y_{ECI}$, metres')
+    ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
     for i, c in enumerate(diffState):
         if satVisible[c]:
-            fig, (ax1, ax2, ax3) = plt.subplots(3)
-            axs = [ax1, ax2, ax3]
-            fig.suptitle('Satellite {sat} Errors'.format(sat=i))
-            ax1.plot(err_X_ECI[c])
-            ax1.plot(np.abs(diffState[c][0, :]))
-            ax1.set(ylabel='$X_{ECI}$, metres')
+            ax1.plot(err_X_ECI[c], linewidth=0.5)
+            ax2.plot(err_Y_ECI[c], linewidth=0.5)
+            ax3.plot(err_Z_ECI[c], linewidth=0.5)
 
-            ax2.plot(err_Y_ECI[c])
-            ax2.plot(np.abs(diffState[c][1, :]))
-            ax2.set(ylabel='$Y_{ECI}$, metres')
-
-            ax3.plot(err_Z_ECI[c])
-            ax3.plot(np.abs(diffState[c][2, :]))
-            ax3.set(xlabel='Time Step', ylabel='$Z_{ECI}$, metres')
-
-            plt.show()
+    plt.show()

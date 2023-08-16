@@ -143,43 +143,42 @@ if __name__ == "__main__":
 
     # ~~~~~ Using EKF
 
-    # delta = 1e-6
-    # for i, c in enumerate(satECIMes):
-    #     mesCheck = False
-    #     for j in range(simLength):
-    #         while not mesCheck:
-    #             if np.all(np.isnan(satECIMes[c][:, j])):
-    #                 break
-    #             else:
-    #                 mesCheck = True
-    #                 break
-    #
-    #         if not mesCheck:
-    #             continue
-    #
-    #         func_params = {
-    #             "stepLength": stepLength,
-    #             "count": j + 1,
-    #             "sensECEF": sens.ECEF,
-    #             "sensLLA[0]": sens.LLA[0],
-    #             "sensLLA[1]": sens.LLA[1]
-    #         }
-    #
-    #         jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)), func_params,
-    #                                              delta)
-    #
-    #         # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
-    #         covECI = jacobian @ covAER @ jacobian.T
-    #
-    #         stateTransMatrix = functions.jacobian_finder(EarthSatellite.at, satState[c], [], delta)
-    #
-    #         satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
-    #                                                measureMatrix, covECI, procNoise)
-    #
-    #         totalStates[c][:, j] = np.reshape(satState[c], 6)
-    #         err_X_ECI[c][j] = (np.sqrt(np.abs(covState[c][0, 0])))
-    #         err_Y_ECI[c][j] = (np.sqrt(np.abs(covState[c][1, 1])))
-    #         err_Z_ECI[c][j] = (np.sqrt(np.abs(covState[c][2, 2])))
+    for i, c in enumerate(satECIMes):
+        mesCheck = False
+        for j in range(simLength):
+            while not mesCheck:
+                if np.all(np.isnan(satECIMes[c][:, j])):
+                    break
+                else:
+                    mesCheck = True
+                    break
+
+            if not mesCheck:
+                continue
+
+            func_params = {
+                "stepLength": stepLength,
+                "count": j + 1,
+                "sensECEF": sens.ECEF,
+                "sensLLA[0]": sens.LLA[0],
+                "sensLLA[1]": sens.LLA[1]
+            }
+
+            jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),
+                                                 func_params)
+
+            # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
+            covECI = jacobian @ covAER @ jacobian.T
+
+            stateTransMatrix = functions.jacobian_finder(EarthSatellite.at, timestamps[i], [])
+
+            satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
+                                                   measureMatrix, covECI, procNoise)
+
+            totalStates[c][:, j] = np.reshape(satState[c], 6)
+            err_X_ECI[c][j] = (np.sqrt(np.abs(covState[c][0, 0])))
+            err_Y_ECI[c][j] = (np.sqrt(np.abs(covState[c][1, 1])))
+            err_Z_ECI[c][j] = (np.sqrt(np.abs(covState[c][2, 2])))
 
     # ~~~~~ Globe Plot
     # del satECI['705']

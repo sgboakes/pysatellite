@@ -153,7 +153,7 @@ if __name__ == "__main__":
                     "sensLLA[1]": sens.LLA[1]
                 }
 
-                jacobian = funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[c][:, j], (3, 1)),
+                jacobian = funcs.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),
                                                  func_params, delta)
 
                 kf[c].R = jacobian @ covAER @ jacobian.T

@@ -9,8 +9,9 @@ import types
 import numpy as np
 from pysatellite import transformations, functions
 import pysatellite.config as cfg
+import datetime
 
-t = cfg.stepLength
+# t = cfg.stepLength
 
 
 def h_x(x_state):
@@ -23,41 +24,22 @@ def h_x(x_state):
     return hxr
 
 
-def jacobian_finder(func_name, func_variable, func_params, delta):
-    if type(func_name) is str:
-        if func_name in dir(transformations):
-            func = getattr(transformations, func_name)
-        elif func_name in dir(functions):
-            func = getattr(functions, func_name)
-        else:
-            raise Exception('Function not found in jf')
-    elif callable(func_name):
-        func = func_name
-    else:
-        raise Exception('Input must be function name or function')
-
-    # if hasattr(pysatellite.transformations, func_name):
-    #     func = getattr(pysatellite.transformations, func_name)
-    # elif hasattr(pysatellite.functions, func_name):
-    #     func = getattr(pysatellite.functions, func_name)
+def jacobian_finder(func, func_variable, func_params, delta=1e-6):
+    if not callable(func):
+        raise Exception('Input func must be function handle')
 
     num_elements = len(func_variable)
 
-    # deriv = np.zeros((1, len(func_variable)))
-
-    jacobian = np.zeros((len(func_variable), len(func_variable)))
+    jacobian = np.zeros((num_elements, num_elements))
     for i in range(num_elements):
         # deriv = []
-        delta_mat = np.zeros((len(func_variable), 1))
+        delta_mat = np.zeros((num_elements, 1))
         delta_mat[i] = delta
         if not func_params:
             deriv = np.reshape(((func(func_variable + delta_mat) - func(func_variable)) / delta), (num_elements, 1))
         else:
-            deriv = np.reshape(((func(func_variable + delta_mat, *list(func_params.values())[:]) - func(func_variable,
-                                                                                                        *list(
-                                                                                                            func_params.values())[
-                                                                                                         :])) / delta),
-                               (num_elements, 1))
+            deriv = np.reshape(((func(func_variable + delta_mat, *list(func_params.values())[:]) -
+                                 func(func_variable, *list(func_params.values())[:])) / delta), (num_elements, 1))
 
         # for i in range(num_elements):
         jacobian[:, i:i + 1] = deriv
@@ -65,8 +47,31 @@ def jacobian_finder(func_name, func_variable, func_params, delta):
     return jacobian
 
 
-def kepler(x_state, t=t):
-    t = cfg.stepLength
+def jacobian_tle(satellite, timestamp):
+
+    num_elements = 3
+
+    delta_t = datetime.timedelta(seconds=10)
+
+    jacobian = np.zeros((num_elements, num_elements))
+    for i in range(num_elements):
+        # deriv = []
+        delta_mat = np.zeros((num_elements, 1))
+        delta_mat[i] = delta_t
+        if not func_params:
+            deriv = np.reshape(((func(func_variable + delta_mat) - func(func_variable)) / delta), (num_elements, 1))
+        else:
+            deriv = np.reshape(((func(func_variable + delta_mat, *list(func_params.values())[:]) -
+                                 func(func_variable, *list(func_params.values())[:])) / delta), (num_elements, 1))
+
+        # for i in range(num_elements):
+        jacobian[:, i:i + 1] = deriv
+
+    return jacobian
+
+
+def kepler(x_state, t=cfg.stepLength, *args):
+    # t = cfg.stepLength
     mu = cfg.mu
 
     r0 = np.linalg.norm(x_state[0:3])
