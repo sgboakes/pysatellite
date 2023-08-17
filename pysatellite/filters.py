@@ -351,6 +351,7 @@ class UKFTLE:
         if inputs is None:
             inputs = []
         sigmas_out = np.array([self.iterate(x, timestep, inputs) for x in self.sigmas.T]).T
+        # sigmas_out = np.array([self.tle.at(timestamp) for x in self.sigmas.T]).T
 
         x_out = np.zeros(self.n_dim)
 
