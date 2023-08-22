@@ -11,7 +11,10 @@ from pysatellite import transformations, functions
 import pysatellite.config as cfg
 import datetime
 
+from tlefit_coe_fd import test_tle_fit_normalized
+
 # t = cfg.stepLength
+# TODO: Docstrings in this file
 
 
 def h_x(x_state):
@@ -50,10 +53,23 @@ def jacobian_finder(func, func_variable, func_params, delta=1e-6):
 def jacobian_tle(satellite, timestamp):
 
     num_elements = 3
-
-    delta_t = datetime.timedelta(seconds=10)
-
     jacobian = np.zeros((num_elements, num_elements))
+
+    # delta_t = datetime.timedelta(seconds=10)
+    # dt_prev = timestamp - delta_t
+    # dt_next = timestamp + delta_t
+    #
+    # rv_prev = satellite.at(dt_prev)
+    # rv_next = satellite.at(dt_next)
+
+    rv = satellite.at(timestamp)
+    r = rv.position.m
+    r_x = r + [1e-6, 0., 0.]
+    r_y = r + [0., 1e-6, 0.]
+    r_z = r + [0., 0., 1e-6]
+
+    # Adapt tle-tailor code to work here
+
     for i in range(num_elements):
         # deriv = []
         delta_mat = np.zeros((num_elements, 1))
