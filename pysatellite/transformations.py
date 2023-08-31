@@ -7,6 +7,7 @@ Created on Mon May 17 13:00:45 2021
 
 import numpy as np
 import pysatellite.config as cfg
+from poliastro.core.elements import coe2rv
 
 # Define common variables
 sin = np.sin
@@ -208,6 +209,16 @@ def body_to_earth(body, psi, theta, phi):
     earth = rot_az.T @ rot_elev.T @ rot_roll.T @ body
 
     return earth
+
+
+def coe_to_rv(k, p, ecc, inc, raan, argp, nu):
+    """Function for converting from classical orbital elements to cartesian position and velocity
+    Uses poliastro's coe2rv function
+    If gravitational parameter k is in m^3/s^2 then ijk will be in m and m/s?
+    """
+
+    return coe2rv(k, p, ecc, inc, raan, argp, nu)
+
 
 def ecef_to_aer(pos_ecef, ori_ecef, ori_lat, ori_lon):
     """

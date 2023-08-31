@@ -2,7 +2,7 @@ import os
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import transformations, functions as funcs, orbit_gen
+from pysatellite import transformations, functions as funcs, orbit_gen, propagators
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -79,7 +79,7 @@ if __name__ == "__main__":
     satECIMes, satAERMes = orbit_gen.gen_measurements(satAER, num_sats, satVis, simLength, stepLength, sens)
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = {'{i}'.format(i=i): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=funcs.kepler, hx=funcs.h_x, points=points)
+    kf = {'{i}'.format(i=i): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=propagators.kepler, hx=funcs.h_x, points=points)
           for i in range(num_sats)}
 
     for i, c in enumerate(satECI):

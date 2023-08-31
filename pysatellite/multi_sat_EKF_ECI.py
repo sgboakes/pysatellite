@@ -7,7 +7,7 @@ Created on Fri Oct  8 14:36:04 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import transformations, functions, filters
+from pysatellite import transformations, functions, filters, propagators
 import pysatellite.config as cfg
 import pysatellite.orbit_gen as orbit_gen
 
@@ -33,7 +33,7 @@ if __name__ == "__main__":
 
     sens = Sensor()
 
-    simLength = cfg.simLength
+    # simLength = cfg.simLength
     simLength = 50
     stepLength = cfg.stepLength
 
@@ -126,7 +126,7 @@ if __name__ == "__main__":
                 # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)
                 covECI = jacobian @ covAER @ jacobian.T
 
-                stateTransMatrix = functions.jacobian_finder(functions.kepler, satState[c], [])
+                stateTransMatrix = functions.jacobian_finder(propagators.kepler, satState[c], [])
 
                 satState[c], covState[c] = filters.ekf(satState[c], covState[c], satECIMes[c][:, j], stateTransMatrix,
                                                        measureMatrix, covECI, procNoise)

@@ -13,7 +13,7 @@ Here we define some global variables for use across multiple pysatellite files.
 
 stepLength: Length of each time step, in s
 simLength: Number of time-steps
-mu: Product of gravitational constant G and mass M, in m^3/s^2
+mu: Gravitational parameter: product of gravitational constant G and mass M, in m^3/s^2
 '''
 
 stepLength = 30

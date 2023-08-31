@@ -8,7 +8,7 @@ Created on Fri Oct  8 14:36:04 2021
 import numpy as np
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-from pysatellite import transformations, functions, filters
+from pysatellite import transformations, functions, propagators, filters
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -134,7 +134,7 @@ if __name__ == "__main__":
     # np.reshape(satECIMes['a'], (3, simLength))
 
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=functions.kepler, hx=functions.h_x, points=points)
+    kf = {chr(i+97): UKF(dim_x=6, dim_z=3, dt=stepLength, fx=propagators.kepler, hx=functions.h_x, points=points)
           for i in range(num_sats)}
 
     for i in range(num_sats):

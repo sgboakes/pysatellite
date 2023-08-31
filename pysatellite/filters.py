@@ -5,7 +5,7 @@ Created on Wed Aug 25 17:04:41 2021
 @author: ben-o_000
 """
 
-from pysatellite import functions
+from pysatellite import propagators
 import numpy as np
 import scipy
 from copy import deepcopy
@@ -41,7 +41,7 @@ def ekf(x_state, cov_state, measurement, state_trans_matrix, measure_matrix, mea
     """
     
     # Prediction
-    x_state = functions.kepler(x_state)
+    x_state = propagators.kepler(x_state)
     cov_state = state_trans_matrix @ cov_state @ state_trans_matrix.T + process_noise
     
     # If no measurement made, can't calculate K - do prediction only

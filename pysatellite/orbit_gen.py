@@ -16,7 +16,7 @@ cos = np.cos
 pi = np.float64(np.pi)
 sqrt = np.sqrt
 
-mu = cfg.mu
+mu = cfg.mu  # Gravitational parameter
 
 
 def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, sens, trans_earth=False):
@@ -239,14 +239,8 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
             # reject_counter += 1
             continue
 
-        pqw = np.array([[cos(nu), sin(nu), 0], [-sin(nu), ecc + cos(nu), 0]]) * \
-            np.array([[p / (1 + ecc * cos(nu))], [sqrt(k / p)]])
+        ijk = transformations.coe_to_rv(mu, p, ecc, inc, raan, argp, nu)
 
-        r = rotation_matrix(raan, 2)
-        r = r @ rotation_matrix(inc, 0)
-        rm = r @ rotation_matrix(argp, 2)
-
-        ijk = pqw @ rm.T
         eci = np.zeros((6, sim_length))
         lla = np.zeros((3, sim_length))
         aer = np.zeros((3, sim_length))

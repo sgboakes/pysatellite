@@ -5,7 +5,7 @@ Created 10/06/2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import transformations, functions as Funcs, filters
+from pysatellite import transformations, functions as funcs, filters, propagators
 import pysatellite.config as cfg
 from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # ~~~~ KF Matrices
     # Testing UKF from FilterPy
     points = MerweScaledSigmaPoints(6, alpha=.1, beta=2., kappa=-1)
-    kf = UKF(dim_x=6, dim_z=3, dt=stepLength, fx=Funcs.kepler, hx=Funcs.h_x, points=points)
+    kf = UKF(dim_x=6, dim_z=3, dt=stepLength, fx=propagators.kepler, hx=funcs.h_x, points=points)
     
     # Initialise state vector
     # (x, y, z, v_x, v_y, v_z)
@@ -130,7 +130,7 @@ if __name__ == "__main__":
             "sensLLA[0]": sensLLA[0],
             "sensLLA[1]": sensLLA[1]}
         
-        jacobian = Funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
+        jacobian = funcs.jacobian_finder("aer_to_eci", np.reshape(satAERMes[:, count], (3, 1)), func_params, delta)
 
         kf.R = jacobian @ covAER @ jacobian.T
 

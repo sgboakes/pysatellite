@@ -7,7 +7,7 @@ Created on Fri Oct  8 14:36:04 2021
 
 import numpy as np
 import matplotlib.pyplot as plt
-from pysatellite import transformations, functions
+from pysatellite import transformations, functions, propagators
 import pysatellite.config as cfg
 # from filterpy.kalman.UKF import UnscentedKalmanFilter as UKF
 # from filterpy.kalman.sigma_points import MerweScaledSigmaPoints
@@ -82,7 +82,7 @@ if __name__ == "__main__":
                     break
 
     kf = {'{i}'.format(i=i): UKF(num_states=6, process_noise=Q, initial_state=x_init[c], initial_covar=P, alpha=0.1,
-                                 k=0., beta=2., iterate_function=functions.kepler) for i, c in enumerate(x_init)}
+                                 k=0., beta=2., iterate_function=propagators.kepler) for i, c in enumerate(x_init)}
 
     angMeasDev, rangeMeasDev = 1e-6, 20
     covAER = np.array([[(angMeasDev * 180 / pi) ** 2, 0, 0],
