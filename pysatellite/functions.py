@@ -10,9 +10,16 @@ import numpy as np
 from pysatellite import transformations
 import pysatellite.config as cfg
 import datetime
+from sgp4.api import Satrec, WGS72
+from sgp4.model import wgs72
+from skyfield.api import EarthSatellite, load
 
-from tlefit_coe_fd import test_tle_fit_normalized
+# from tlefit_coe_fd import test_tle_fit_normalized
 
+wgs84 = cfg.WGS84
+# wgs72 = cfg.WGS72
+mu = cfg.mu
+ts = load.timescale()
 # t = cfg.stepLength
 # TODO: Docstrings in this file
 
@@ -127,3 +134,46 @@ def stump_s(z):
         s = 1 / 6
 
     return s
+
+
+def create_sgp4_sat(elements, satellite, ops_mode="i"):
+    """Createa new EarthSatellite object using the provided orbital elements and
+    additional parameters, like epoch from a seed EarthSatellite object
+
+    Args:
+        elements (list): Orbital elements set
+        satellite (EarthSatellite): Seed EarthSatellite object
+        ops_mode (str, optional): SGP4 Ops mode (a - AFPSC mode, i - improved mode).
+            Defaults to "i".
+
+    Returns:
+        EarthSatellite: EarthSatellite object
+    """
+
+    bstar = 1e-6  # temp
+    a, ecc, incl, omega, argp, m = elements
+    n = np.sqrt(wgs72.mu / a**3)
+
+    jd_sat_epoch, jd_sat_epoch_frac = satellite.model.jdsatepoch, satellite.model.jdsatepochF
+
+    satrec = Satrec()
+    satrec.sgp4init(
+        WGS72,
+        ops_mode,
+        satellite.model.satnum,
+        round(jd_sat_epoch + jd_sat_epoch_frac - 2433281.5, 8),
+        bstar,
+        0.0,
+        0.0,
+        ecc,
+        argp,
+        incl,
+        m,
+        n * 60,
+        omega,
+    )
+
+    sat = EarthSatellite.from_satrec(satrec, ts)
+    sat.model.jdsatepochF = satellite.model.jdsatepochF
+
+    return sat

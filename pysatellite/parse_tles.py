@@ -130,3 +130,6 @@ plt.show()
 # with open(file_reduced, 'w') as f:
 #     for i, c in enumerate(satAERVisible):
 #         f.writelines(tles[c])
+
+# ~~~~~ Test to see if returned tle is same as original
+

@@ -7,16 +7,16 @@ Created on Mon May 17 13:00:45 2021
 
 import numpy as np
 import pysatellite.config as cfg
-from poliastro.core.elements import coe2rv
+from poliastro.core.elements import coe2rv, rv2coe
 
 # Define common variables
 sin = np.sin
 cos = np.cos
 omega = np.float64(7.2921158553e-5)  # Earth rotation rate ~SIDEREAL
-WGS = cfg.WGS
-a = WGS["SemimajorAxis"]
-b = WGS["SemiminorAxis"]
-e = WGS["Eccentricity"]
+WGS = cfg.WGS84
+a = WGS.semimajoraxis
+b = WGS.semiminoraxis
+e = WGS.eccentricity
 ePrime = np.sqrt((a**2 - b**2) / b**2)  # Square of second eccentricity
 
 
@@ -743,3 +743,12 @@ def ned_to_ecef(pos_ned, ori_ecef, ori_lat, ori_lon):
 
     pos_ecef = [x_ecef], [y_ecef], [z_ecef]
     return pos_ecef
+
+
+def rv_to_coe(r, v, mu=cfg.mu):
+    """Function for converting from cartesian position and velocity to classical orbital elements
+    Uses poliastro's rv2coe function
+    If gravitational parameter k is in m^3/s^2 then ijk will be in m and m/s?
+    """
+
+    return rv2coe(mu, r, v)
