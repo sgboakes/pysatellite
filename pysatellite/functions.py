@@ -137,7 +137,7 @@ def stump_s(z):
 
 
 def create_sgp4_sat(elements, satellite, ops_mode="i"):
-    """Createa new EarthSatellite object using the provided orbital elements and
+    """Create a new EarthSatellite object using the provided orbital elements and
     additional parameters, like epoch from a seed EarthSatellite object
 
     Args:

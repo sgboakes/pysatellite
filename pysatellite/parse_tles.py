@@ -133,3 +133,27 @@ plt.show()
 
 # ~~~~~ Test to see if returned tle is same as original
 
+rv = satellites['0'].at(timestamps[0])
+elements = transformations.rv_to_coe(rv.position.m, rv.velocity.m_per_s)
+
+new_sat = functions.create_sgp4_sat(elements, satellites['0'])
+
+rv_new = np.zeros((6, simLength))
+for i in range(simLength):
+    diff = new_sat - bluffton
+    topocentric = diff.at(timestamps[i])
+    rv_new[:, i] = (np.reshape(([topocentric.position.m], [topocentric.velocity.m_per_s]), (6,)))
+
+fig2 = plt.figure()
+ax = plt.axes(projection='3d')
+ax.view_init(45, 35)
+ax.set_aspect('auto')
+
+# for i, c in enumerate(satECI):
+#     ax.plot3D(satECI[c][0, :], satECI[c][1, :], satECI[c][2, :])
+
+# ax.plot3D(satECI['0'][0, :], satECI['0'][1, :], satECI['0'][2, :])
+ax.plot3D(satTEME['0'][0, :], satTEME['0'][1, :], satTEME['0'][2, :])
+ax.plot3D(rv_new[0, :], rv_new[1, :], rv_new[2, :])
+
+plt.show()
