@@ -14,7 +14,7 @@ from sgp4.api import Satrec, WGS72
 from sgp4.model import wgs72
 from skyfield.api import EarthSatellite, load
 
-# from tlefit_coe_fd import test_tle_fit_normalized
+from tlefit_coe_fd import test_tle_fit_normalized
 
 wgs84 = cfg.WGS84
 # wgs72 = cfg.WGS72
