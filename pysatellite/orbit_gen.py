@@ -204,7 +204,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
     sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_visible
     """
     # From poliastro and ssa-gym
-    RE_eq = cfg.WGS['SemimajorAxis']
+    RE_eq = cfg.WGS84.semimajoraxis
     k = mu
 
     complete = False
@@ -339,7 +339,7 @@ def coe_orbits2(num_sats, sim_length, step_length, sens, trans_earth=False):
         sat_eci, sat_aer, sat_eci_mes, sat_aer_mes, sat_visible
         """
     # From poliastro and ssa-gym
-    RE_eq = cfg.WGS['SemimajorAxis']
+    RE_eq = cfg.WGS84.semimajoraxis
     k = mu
 
     complete = False
