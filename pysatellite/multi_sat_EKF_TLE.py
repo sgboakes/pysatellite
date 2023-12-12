@@ -77,8 +77,7 @@ if __name__ == "__main__":
             topocentric = diff.at(t)
             alt, az, dist = topocentric.altaz()
             satAER[c][:, j] = [az.radians, alt.radians, dist.m]
-            satECI[c][:, j] = np.reshape(transformations.aer_to_eci(satAER[c][:, j], stepLength, j, sens.ECEF,
-                                                                    sens.LLA[0], sens.LLA[1]), (3,))
+            satECI[c][:, j] = np.reshape(transformations.aer_to_eci(satAER[c][:, j], stepLength, j, sens), (3,))
 
     satECIMes, satAERMes = orbit_gen.gen_measurements(satAER, num_sats, satVis, simLength, stepLength, sens)
 
@@ -159,9 +158,7 @@ if __name__ == "__main__":
             func_params = {
                 "stepLength": stepLength,
                 "count": j + 1,
-                "sensECEF": sens.ECEF,
-                "sensLLA[0]": sens.LLA[0],
-                "sensLLA[1]": sens.LLA[1]
+                "sensor": sens
             }
 
             jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),

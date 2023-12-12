@@ -92,8 +92,7 @@ for i, c in enumerate(satellites):
         topocentric = diff.at(t)
         alt, az, dist = topocentric.altaz()
         satAER[c][:, j] = [az.radians, alt.radians, dist.m]
-        satECI[c][:, j] = np.reshape(transformations.aer_to_eci(satAER[c][:, j], stepLength, j, sens.ECEF,
-                                                                sens.LLA[0], sens.LLA[1]), (3,))
+        satECI[c][:, j] = np.reshape(transformations.aer_to_eci(satAER[c][:, j], stepLength, j, sens), (3,))
         satTEME[c][:, j] = np.reshape(([topocentric.position.m], [topocentric.velocity.m_per_s]), (6,))
 
 # count = 0
@@ -134,46 +133,46 @@ plt.show()
 # ~~~~~ Test to see if returned tle is same as original
 
 rv = satellites['0'].at(timestamps[0])
-elements = transformations.rv_to_coe(rv.position.m, rv.velocity.m_per_s)
-
-new_sat = functions.create_sgp4_sat(elements, satellites['0'])
-
-iterations, sigma_new, sigmas, dxs, bs, lamdas, b_epoch, b_new_epoch, b, P, A = functions.state_to_tle(satellites['0'],
-                                                                                                       debug=True)
-
-print(iterations)
-print(sigma_new)
-print(sigmas)
-print(dxs)
-print(bs)
-print(lamdas)
-print(b_epoch)
-print(b_new_epoch)
-print(b)
-print(P)
-print(A)
-
-rv_new = np.zeros((6, simLength))
-# rv_new_2 = np.zeros((6, simLength))
-for i in range(simLength):
-    diff = new_sat - bluffton
-    # diff_2 = new_sat_2 - bluffton
-    topocentric = diff.at(timestamps[i])
-    # topocentric_2 = diff_2.at(timestamps[i])
-    rv_new[:, i] = (np.reshape(([topocentric.position.m], [topocentric.velocity.m_per_s]), (6,)))
-    # rv_new_2[:, i] = (np.reshape(([topocentric_2.position.m], [topocentric_2.velocity.m_per_s]), (6,)))
-
-fig2 = plt.figure()
-ax = plt.axes(projection='3d')
-ax.view_init(45, 35)
-ax.set_aspect('auto')
-
-# for i, c in enumerate(satECI):
-#     ax.plot3D(satECI[c][0, :], satECI[c][1, :], satECI[c][2, :])
-
-# ax.plot3D(satECI['0'][0, :], satECI['0'][1, :], satECI['0'][2, :])
-ax.plot3D(satTEME['0'][0, :], satTEME['0'][1, :], satTEME['0'][2, :])
-ax.plot3D(rv_new[0, :], rv_new[1, :], rv_new[2, :])
-# ax.plot3D(rv_new_2[0, :], rv_new_2[1, :], rv_new_2[2, :])
-
-plt.show()
+# elements = transformations.rv_to_coe(rv.position.m, rv.velocity.m_per_s)
+#
+# new_sat = functions.create_sgp4_sat(elements, satellites['0'])
+#
+# iterations, sigma_new, sigmas, dxs, bs, lamdas, b_epoch, b_new_epoch, b, P, A = functions.state_to_tle(satellites['0'],
+#                                                                                                        debug=True)
+#
+# print(iterations)
+# print(sigma_new)
+# print(sigmas)
+# print(dxs)
+# print(bs)
+# print(lamdas)
+# print(b_epoch)
+# print(b_new_epoch)
+# print(b)
+# print(P)
+# print(A)
+#
+# rv_new = np.zeros((6, simLength))
+# # rv_new_2 = np.zeros((6, simLength))
+# for i in range(simLength):
+#     diff = new_sat - bluffton
+#     # diff_2 = new_sat_2 - bluffton
+#     topocentric = diff.at(timestamps[i])
+#     # topocentric_2 = diff_2.at(timestamps[i])
+#     rv_new[:, i] = (np.reshape(([topocentric.position.m], [topocentric.velocity.m_per_s]), (6,)))
+#     # rv_new_2[:, i] = (np.reshape(([topocentric_2.position.m], [topocentric_2.velocity.m_per_s]), (6,)))
+#
+# fig2 = plt.figure()
+# ax = plt.axes(projection='3d')
+# ax.view_init(45, 35)
+# ax.set_aspect('auto')
+#
+# # for i, c in enumerate(satECI):
+# #     ax.plot3D(satECI[c][0, :], satECI[c][1, :], satECI[c][2, :])
+#
+# # ax.plot3D(satECI['0'][0, :], satECI['0'][1, :], satECI['0'][2, :])
+# ax.plot3D(satTEME['0'][0, :], satTEME['0'][1, :], satTEME['0'][2, :])
+# ax.plot3D(rv_new[0, :], rv_new[1, :], rv_new[2, :])
+# # ax.plot3D(rv_new_2[0, :], rv_new_2[1, :], rv_new_2[2, :])
+#
+# plt.show()

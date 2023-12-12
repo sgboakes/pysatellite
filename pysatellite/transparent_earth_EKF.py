@@ -61,8 +61,7 @@ if __name__ == "__main__":
     
     satECIMes = np.zeros((3, simLength))
     for count in range(simLength):
-        satECIMes[:, [count]] = transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sensECEF,
-                                                           sensLLA[0], sensLLA[1])
+        satECIMes[:, [count]] = transformations.aer_to_eci(satAERMes[:, count], stepLength, count+1, sens)
 
     # ~~~~ Temp ECI measurements from MATLAB
     

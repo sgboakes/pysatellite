@@ -23,13 +23,19 @@ if __name__ == "__main__":
     cos = np.cos
     pi = np.float64(np.pi)
 
-    sensLat = np.float64(28.300697)
-    sensLon = np.float64(-16.509675)
-    sensAlt = np.float64(2390)
-    sensLLA = np.array([[sensLat * pi / 180], [sensLon * pi / 180], [sensAlt]], dtype='float64')
-    # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
-    sensECEF = transformations.lla_to_ecef(sensLLA)
-    sensECEF.shape = (3, 1)
+
+    class Sensor:
+        def __init__(self):
+            # Using Liverpool Telescope as location
+            self.LLA = np.array([[np.deg2rad(28.300697)], [np.deg2rad(-16.509675)], [2390]], dtype='float64')
+            # sensLLA = np.array([[pi/2], [0], [1000]], dtype='float64')
+            self.ECEF = transformations.lla_to_ecef(self.LLA)
+            self.ECEF.shape = (3, 1)
+            self.AngVar = 1e-6
+            self.RngVar = 20
+
+
+    sens = Sensor()
 
     # simLength = cfg.simLength
     # stepLength = cfg.stepLength
@@ -123,8 +129,7 @@ if __name__ == "__main__":
         c = chr(i + 97)
         satECIMes = np.empty((3, simLength))
         for j in range(simLength):
-            satECIMes[:, j:j + 1] = transformations.aer_to_eci(satAERMes[:, j], stepLength, j+1, sensECEF,
-                                                               sensLLA[0], sensLLA[1])
+            satECIMes[:, j:j + 1] = transformations.aer_to_eci(satAERMes[:, j], stepLength, j+1, sens)
 
     # ~~~~ Temp ECI measurements from MATLAB
 
@@ -197,9 +202,7 @@ if __name__ == "__main__":
             func_params = {
                 "stepLength": stepLength,
                 "count": j + 1,
-                "sensECEF": sensECEF,
-                "sensLLA[0]": sensLLA[0],
-                "sensLLA[1]": sensLLA[1]
+                "sensor": sens
             }
 
             jacobian = functions.jacobian_finder("aer_to_eci", np.reshape(satAERMes[:, j], (3, 1)),

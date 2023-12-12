@@ -37,7 +37,7 @@ if __name__ == "__main__":
     simLength = 50
     stepLength = cfg.stepLength
 
-    num_sats = 25
+    num_sats = 50
 
     # ~~~~ Satellite Conversion METHOD 1
     satECI, satECIMes, satAER, satAERMes, satVisible = orbit_gen.circular_orbits(num_sats, simLength, stepLength, sens)
@@ -115,12 +115,11 @@ if __name__ == "__main__":
                 func_params = {
                     "stepLength": stepLength,
                     "count": j + 1,
-                    "sensECEF": sens.ECEF,
-                    "sensLLA[0]": sens.LLA[0],
-                    "sensLLA[1]": sens.LLA[1]
+                    "sensor": sens
                 }
 
-                jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),
+                jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j],
+                                                                                            (3, 1)),
                                                      func_params)
 
                 # covECI = np.matmul(np.matmul(jacobian, covAER), jacobian.T)

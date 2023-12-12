@@ -114,9 +114,7 @@ if __name__ == "__main__":
                 func_params = {
                     "stepLength": stepLength,
                     "count": j + 1,
-                    "sensECEF": sens.ECEF,
-                    "sensLLA[0]": sens.LLA[0],
-                    "sensLLA[1]": sens.LLA[1]
+                    "sensor": sens
                 }
 
                 jacobian = functions.jacobian_finder(transformations.aer_to_eci, np.reshape(satAERMes[c][:, j], (3, 1)),

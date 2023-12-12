@@ -61,7 +61,7 @@ def gen_measurements(sat_aer, num_sats, sat_vis_check, sim_length, step_length, 
         if sat_vis_check[c]:
             for j in range(sim_length):
                 sat_eci_mes[c][:, j:j + 1] = transformations.aer_to_eci(sat_aer_mes[c][:, j], step_length, j + 1,
-                                                                        sens.ECEF, sens.LLA[0], sens.LLA[1])
+                                                                        sens)
 
     # Making NaN measurements where elevation < 0
     # TODO: Think of more efficient way to do this? Vectorisation at top is good, implement something similar here?
@@ -172,8 +172,7 @@ def rodrigues_formula(num_sats, sim_length, step_length, sens, r, omega, theta, 
             sat_eci[c][:, j] = (v @ cos(theta[i])) + (np.cross(k[i, :].T, v.T) * sin(theta[i])) + (
                     k[i, :].T * np.dot(k[i, :].T, v) * (1 - cos(theta[i])))
 
-            sat_aer[c][:, j:j + 1] = transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens.ECEF,
-                                                                sens.LLA[0], sens.LLA[1])
+            sat_aer[c][:, j:j + 1] = transformations.eci_to_aer(sat_eci[c][:, j], step_length, j + 1, sens)
 
         if np.isnan(sat_aer[c]).all():
             print('Satellite {s} is not observable'.format(s=i))
@@ -252,8 +251,7 @@ def coe_orbits(num_sats, sim_length, step_length, sens, trans_earth=False):
 
         for j in range(sim_length):
             lla[:, j:j+1] = transformations.eci_to_lla(eci[0:3, j], step_length, j+1)
-            aer[:, j:j+1] = transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens.ECEF, sens.LLA[0],
-                                                       sens.LLA[1])
+            aer[:, j:j+1] = transformations.eci_to_aer(eci[0:3, j], step_length, j+1, sens)
 
         # Check for orbit validity
         # if lla[2, :].all() > 300*1000:
@@ -390,8 +388,7 @@ def coe_orbits2(num_sats, sim_length, step_length, sens, trans_earth=False):
 
         for j in range(sim_length):
             lla[:, j:j + 1] = transformations.eci_to_lla(eci[0:3, j], step_length, j + 1)
-            aer[:, j:j + 1] = transformations.eci_to_aer(eci[0:3, j], step_length, j + 1, sens.ECEF, sens.LLA[0],
-                                                         sens.LLA[1])
+            aer[:, j:j + 1] = transformations.eci_to_aer(eci[0:3, j], step_length, j + 1, sens)
 
         # Check for orbit validity
         # if lla[2, :].all() > 300*1000:

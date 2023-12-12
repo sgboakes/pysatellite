@@ -54,7 +54,7 @@ if __name__ == "__main__":
 
     # ~~~~ Satellite Generation METHOD 3
     satECI, satAER, satECIMes, satAERMes, satVisible = orbit_gen.swarm_orbits(num_sats, simLength, stepLength,
-                                                                                 sens)
+                                                                              sens)
 
     # ~~~~~ Globe Plot
 

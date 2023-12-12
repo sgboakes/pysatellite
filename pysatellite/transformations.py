@@ -19,6 +19,7 @@ b = WGS.semiminoraxis
 e = WGS.eccentricity
 ePrime = np.sqrt((a**2 - b**2) / b**2)  # Square of second eccentricity
 
+# TODO: Pass through sensor object only that contains ECEF, LLA
 
 def ae_to_ned(ae):
     psi = ae[0]
@@ -29,27 +30,24 @@ def ae_to_ned(ae):
 
     return ned
 
-def aer_to_eci(pos_aer, step_length, step_num, ori_ecef, ori_lat, ori_lon):
+def aer_to_eci(pos_aer, step_length, step_num, sensor):
     """
     Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_aer: A 1x3 or 3x1 vector containing the Azimuth, Elevation, and Range
-            positions in radians and metres, respectively.
+    pos_aer: A 1x3 or 3x1 vector containing Azimuth, Elevation, and Range
+            in radians and metres.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-            as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
-
-    WGS: The WGS84 reference ellipsoid
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
     pos_lla: A 3x1 vector containing the latitude, longitude, and altitude
-        positions in radians and metres, respectively.
+        positions in radians and metres.
     """
+
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
 
     az = pos_aer[0]
     elev = pos_aer[1]
@@ -62,13 +60,13 @@ def aer_to_eci(pos_aer, step_length, step_num, ori_ecef, ori_lat, ori_lon):
     
     pos_ned = np.array([[x_north, y_east, -z_up]], dtype='float64').T
     
-    rot_matrix = np.array([[(-sin(ori_lat)*cos(ori_lon)), -sin(ori_lon), (-cos(ori_lat) * cos(ori_lon))],
-                          [(-sin(ori_lat) * sin(ori_lon)), cos(ori_lon), (-cos(ori_lat) * sin(ori_lon))],
-                          [cos(ori_lat), 0.0, (-sin(ori_lat))]], dtype='float64')
+    rot_matrix = np.array([[(-sin(sens_lat)*cos(sens_lon)), -sin(sens_lon), (-cos(sens_lat) * cos(sens_lon))],
+                          [(-sin(sens_lat) * sin(sens_lon)), cos(sens_lon), (-cos(sens_lat) * sin(sens_lon))],
+                          [cos(sens_lat), 0.0, (-sin(sens_lat))]], dtype='float64')
     
     pos_ecef_delta = rot_matrix @ pos_ned
     
-    pos_ecef = pos_ecef_delta + ori_ecef
+    pos_ecef = pos_ecef_delta + sens_ecef
 
     # Generate matrices for multiplication
     rotation_matrix = np.array([[cos(step_num*step_length*omega), -sin(step_num*step_length*omega), 0.0],
@@ -80,41 +78,38 @@ def aer_to_eci(pos_aer, step_length, step_num, ori_ecef, ori_lat, ori_lon):
     return pos_eci
 
 
-def aer_to_lla(pos_aer, ori_ecef, ori_lat, ori_lon):
+def aer_to_lla(pos_aer, sensor):
     """
-    Function for converting Az/Elev/Range to Latitude/Longitude/Altitude
+    Function for converting Az/Elev/Range to ECEF position
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_aer: A 1x3 or 3x1 vector containing the Azimuth, Elevation, and Range
-            positions in radians and metres, respectively.
+    pos_aer: A 1x3 or 3x1 vector containing Azimuth, Elevation, and Range
+            in radians and metres.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-            as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
-
-    WGS:  The WGS84 reference ellipsoid
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_lla: A 3x1 vector containing the latitude, longitude, and altitude
-        positions in radians and metres, respectively.
+    pos_lla: A 3x1 vector containing latitude, longitude, and altitude
+            in radians and metres.
     """
 
     az = pos_aer[0]
     elev = pos_aer[1]
     ran = pos_aer[2]
 
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
+
     z_up = ran * sin(elev)
     r = ran * cos(elev)
     y_east = r * sin(az)
     x_north = r * cos(az)
 
-    cos_phi = cos(ori_lat)
-    sin_phi = sin(ori_lat)
-    cos_lambda = cos(ori_lon)
-    sin_lambda = sin(ori_lon)
+    cos_phi = cos(sens_lat)
+    sin_phi = sin(sens_lat)
+    cos_lambda = cos(sens_lon)
+    sin_lambda = sin(sens_lon)
 
     z_down = -z_up
 
@@ -124,9 +119,9 @@ def aer_to_lla(pos_aer, ori_ecef, ori_lat, ori_lon):
     dx = cos_lambda * t - sin_lambda * y_east
     dy = sin_lambda * t + cos_lambda * y_east
 
-    x_ecef = ori_ecef[0] + dx
-    y_ecef = ori_ecef[1] + dy
-    z_ecef = ori_ecef[2] + dz
+    x_ecef = sens_ecef[0] + dx
+    y_ecef = sens_ecef[1] + dy
+    z_ecef = sens_ecef[2] + dz
 
     # Closed formula set
     p = np.sqrt(x_ecef**2+y_ecef**2)
@@ -148,11 +143,10 @@ def aer_to_ned(pos_aer):
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
     pos_aer: A 1x3 or 3x1 vector containing the Azimuth, Elevation, and Range
-            positions in radians and metres, respectively.
+            positions in radians and metres.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_ned: A 3x1 vector containing the north, east, and down positions,
-        respectively.
+    pos_ned: A 3x1 vector containing the north, east, and down positions.
     """
 
     az = pos_aer[0]
@@ -220,33 +214,31 @@ def coe_to_rv(k, p, ecc, inc, raan, argp, nu):
     return coe2rv(k, p, ecc, inc, raan, argp, nu)
 
 
-def ecef_to_aer(pos_ecef, ori_ecef, ori_lat, ori_lon):
+def ecef_to_aer(pos_ecef, sensor):
     """
     Function for converting ECEF position to Azimuth/Elevation/Range
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_eci: A 3x1 vector containing the x, y, and z ECI positions,
-            respectively.
+    pos_eci: A 3x1 vector containing the x, y, and z ECI positions.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-             as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_aer: A 3x1 vector containing the azimuth, elevation, and range
-            positions in radians, respectively.
+    pos_aer: A 3x1 vector containing azimuth, elevation, and range
+            in radians.
     """
 
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
+
     transform_matrix = np.array(
-        [[(-sin(ori_lat) * cos(ori_lon)), (-sin(ori_lat) * sin(ori_lon)), cos(ori_lat)],
-         [(-sin(ori_lon)), cos(ori_lon), 0.0],
-         [(-cos(ori_lat) * cos(ori_lon)), (-cos(ori_lat) * sin(ori_lon)), (-sin(ori_lat))]],
+        [[(-sin(sens_lat) * cos(sens_lon)), (-sin(sens_lat) * sin(sens_lon)), cos(sens_lat)],
+         [(-sin(sens_lon)), cos(sens_lon), 0.0],
+         [(-cos(sens_lat) * cos(sens_lon)), (-cos(sens_lat) * sin(sens_lon)), (-sin(sens_lat))]],
         dtype='float64')
 
-    pos_delta = pos_ecef - ori_ecef
+    pos_delta = pos_ecef - sens_ecef
 
     pos_ned = transform_matrix @ pos_delta
 
@@ -269,8 +261,7 @@ def ecef_to_eci(pos_ecef, step_length, step_num):
     Function for converting ECEF coordinates to ECI coordinates
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
+    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions.
 
     step_length: The length of each time step of the simulation.
 
@@ -278,8 +269,7 @@ def ecef_to_eci(pos_ecef, step_length, step_num):
              length to convert increasing steps through the simulation.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_eci: A 3x1 vector containing the x, y, and z ECI positions,
-            respectively.
+    pos_eci: A 3x1 vector containing the x, y, and z ECI positions.
     """
 
     # omega = 2*pi / (24*60*60) ~NOT SIDEREAL
@@ -299,14 +289,11 @@ def ecef_to_lla(pos_ecef):
     using a closed formula set.
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_ecef: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
-
-    WGS:  The WGS84 reference ellipsoid
+    pos_ecef: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_lla: A 3x1 vector containing the latitude, longitude, and altitude
-            positions in radians, respectively.
+    pos_lla: A 3x1 vector containing latitude, longitude, and altitude
+            in radians and meres.
     """
 
     x_ecef = pos_ecef[0]
@@ -330,38 +317,35 @@ def ecef_to_lla(pos_ecef):
     return pos_lla
 
 
-def ecef_to_ned(pos_ecef, ori_ecef, ori_lat, ori_lon):
+def ecef_to_ned(pos_ecef, sensor):
     """
     Function for converting ECEF coordinates to local NED coordinates
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_ecef: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
+    pos_ecef: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-             as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_ned: A 3x1 vector containing the north, east, and down positions,
-            respectively.
+    pos_ned: A 3x1 vector containing the north, east, and down positions.
     """
 
     x_obj = pos_ecef[0]
     y_obj = pos_ecef[1]
     z_obj = pos_ecef[2]
 
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
+
     # Generate matrices for multiplication
     rotation_matrix = np.array(
-        [[-(sin(ori_lon)), cos(ori_lon), 0.0],
-         [(-(sin(ori_lat))*cos(ori_lon)), (-(sin(ori_lat))*sin(ori_lon)), cos(ori_lat)],
-         [(cos(ori_lat)*cos(ori_lon)), (cos(ori_lat)*sin(ori_lon)), sin(ori_lat)]],
+        [[-(sin(sens_lon)), cos(sens_lon), 0.0],
+         [(-(sin(sens_lat))*cos(sens_lon)), (-(sin(sens_lat))*sin(sens_lon)), cos(sens_lat)],
+         [(cos(sens_lat)*cos(sens_lon)), (cos(sens_lat)*sin(sens_lon)), sin(sens_lat)]],
         dtype='float64')
 
-    coord_matrix = [x_obj - ori_ecef[0]], [y_obj - ori_ecef[1]], [z_obj - ori_ecef[2]]
+    coord_matrix = [x_obj - sens_ecef[0]], [y_obj - sens_ecef[1]], [z_obj - sens_ecef[2]]
 
     # Find enu vector
     enu = rotation_matrix @ coord_matrix
@@ -375,32 +359,30 @@ def ecef_to_ned(pos_ecef, ori_ecef, ori_lat, ori_lon):
     return pos_ned
 
 
-def eci_to_aer(pos_eci, step_length, step_num, ori_ecef, ori_lat, ori_lon):
+def eci_to_aer(pos_eci, step_length, step_num, sensor):
     """
     Function for converting ECI position to Azimuth/Elevation/Range
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_eci: A 3x1 vector containing the x, y, and z ECI positions,
-            respectively.
+    pos_eci: A 3x1 vector containing the x, y, and z ECI positions.
 
     step_length: The length of each time step of the simulation.
 
     step_num: The current step number of the simulation. This works with step
              length to convert increasing steps through the simulation.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-             as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_aer: A 3x1 vector containing the azimuth, elevation, and range
-            positions in radians, respectively.
+    pos_aer: A 3x1 vector containing azimuth, elevation, and range
+            in radians and metres.
     """
 
     # omega = 2*pi / (24*60*60) ~NOT SIDEREAL
+
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
 
     rotation_matrix = np.array([[cos(step_num*step_length*omega), sin(step_num*step_length*omega), 0.0],
                                 [-(sin(step_num*step_length*omega)), cos(step_num*step_length*omega), 0.0],
@@ -412,12 +394,12 @@ def eci_to_aer(pos_eci, step_length, step_num, ori_ecef, ori_lat, ori_lon):
     pos_ecef = rotation_matrix @ pos_eci
 
     transform_matrix = np.array(
-        [[(-sin(ori_lat)*cos(ori_lon)), (-sin(ori_lat)*sin(ori_lon)), cos(ori_lat)],
-         [(-sin(ori_lon)), cos(ori_lon), 0.0],
-         [(-cos(ori_lat)*cos(ori_lon)), (-cos(ori_lat)*sin(ori_lon)), (-sin(ori_lat))]],
+        [[(-sin(sens_lat)*cos(sens_lon)), (-sin(sens_lat)*sin(sens_lon)), cos(sens_lat)],
+         [(-sin(sens_lon)), cos(sens_lon), 0.0],
+         [(-cos(sens_lat)*cos(sens_lon)), (-cos(sens_lat)*sin(sens_lon)), (-sin(sens_lat))]],
         dtype='float64')
 
-    pos_delta = pos_ecef - ori_ecef
+    pos_delta = pos_ecef - sens_ecef
 
     pos_ned = transform_matrix @ pos_delta
 
@@ -440,8 +422,7 @@ def eci_to_ecef(pos_eci, step_length, step_num):
     Function for converting ECI coordinates to ECEF coordinates
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_eci: A 3x1 vector containing the x, y, and z ECI positions,
-            respectively.
+    pos_eci: A 3x1 vector containing the x, y, and z ECI positions.
 
     step_length: The length of each time step of the simulation.
 
@@ -449,8 +430,7 @@ def eci_to_ecef(pos_eci, step_length, step_num):
              length to convert increasing steps through the simulation.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
+    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions.
     """
 
     # omega = 2*pi / (24*60*60) ~NOT SIDEREAL
@@ -471,19 +451,16 @@ def eci_to_lla(pos_eci, step_length, step_num):
     using a closed formula set.
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_eci: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions,
-            respectively.
+    pos_eci: A 1x3 or 3x1 vector containing the x, y, and z ECEF positions.
 
     step_length: The length of each time step of the simulation.
 
     step_num: The current step number of the simulation. This works with step
              length to convert increasing steps through the simulation.
 
-    WGS:  The WGS84 reference ellipsoid
-
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_lla: A 3x1 vector containing the latitude, longitude, and altitude
-            positions in radians, respectively.
+    pos_lla: A 3x1 vector containing latitude, longitude, and altitude
+            in radians and metres.
     """
 
     # omega = 2*pi / (24*60*60) ~NOT SIDEREAL
@@ -517,31 +494,28 @@ def eci_to_lla(pos_eci, step_length, step_num):
     return pos_lla
 
 
-def lla_to_aer(pos_lla, ori_ecef, ori_lat, ori_lon):
+def lla_to_aer(pos_lla, sensor):
     """
     Function for converting Latitude/Longitude/Altitude to Az/Elev/Range
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_lla: A 3x1 vector containing the latitude, longitude, and altitude
-            positions in radians, respectively.
+    pos_lla: A 3x1 vector containing latitude, longitude, and altitude
+            in radians and metres.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-            as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
-
-    WGS:  The WGS84 reference ellipsoid
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_aer: A 1x3 or 3x1 vector containing the Azimuth, Elevation, and Range
-        positions in radians, respectively.
+    pos_aer: A 1x3 or 3x1 vector containing Azimuth, Elevation, and Range
+        in radians.
     """
 
     lat = pos_lla[0]
     lon = pos_lla[1]
     alt = pos_lla[2]
+
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
 
     # Prime vertical radius of curvature N(phi)
     # Formula if eccentricity not defined: n_phi = a**2 / (sqrt((a**2*(cos(lat)**2))+(b**2*(sin(lat)**2))))
@@ -553,15 +527,15 @@ def lla_to_aer(pos_lla, ori_ecef, ori_lat, ori_lon):
 
     # Generate matrices for multiplication
     rotation_matrix = np.array(
-        [[-sin(ori_lon), cos(ori_lon), 0],
-         [(-sin(ori_lat)*cos(ori_lon)), (-sin(ori_lat)*sin(ori_lon)), cos(ori_lat)],
-         [(cos(ori_lat)*cos(ori_lon)), (cos(ori_lat)*sin(ori_lon)), sin(ori_lat)]],
+        [[-sin(sens_lon), cos(sens_lon), 0],
+         [(-sin(sens_lat)*cos(sens_lon)), (-sin(sens_lat)*sin(sens_lon)), cos(sens_lat)],
+         [(cos(sens_lat)*cos(sens_lon)), (cos(sens_lat)*sin(sens_lon)), sin(sens_lat)]],
         dtype='float64')
 
     coord_matrix = np.array(
-        [[x_ecef - ori_ecef[0]],
-         [y_ecef - ori_ecef[1]],
-         [z_ecef - ori_ecef[2]]],
+        [[x_ecef - sens_ecef[0]],
+         [y_ecef - sens_ecef[1]],
+         [z_ecef - sens_ecef[2]]],
         dtype='float64')
 
     # Find enu vector
@@ -586,14 +560,11 @@ def lla_to_ecef(pos_lla):
     Function for converting ECEF coordinates to latitude/longitude/altitude.
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_lla: A 1x3 or 3x1 vector containing the latitude, longitude, and
-            altitude positions in radians, respectively.
-
-    WGS:  The WGS84 reference ellipsoid
+    pos_lla: A 1x3 or 3x1 vector containing latitude, longitude, and
+            altitude in radians and metres.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_ecef: A  3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
+    pos_ecef: A  3x1 vector containing the x, y, and z ECEF positions.
     """
 
     lat = pos_lla[0]
@@ -620,19 +591,16 @@ def lla_to_eci(pos_lla, step_length, step_num):
     Function for converting latitude/longitude/altitude to ECI coordinates.
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_lla: A 1x3 or 3x1 vector containing the latitude, longitude, and
-            altitude positions in radians, respectively.
+    pos_lla: A 1x3 or 3x1 vector containing latitude, longitude, and
+            altitude in radians and metres.
 
     step_length: The length of each time step of the simulation.
 
     step_num: The current step number of the simulation. This works with step
              length to convert increasing steps through the simulation.
 
-    WGS:  The WGS84 reference ellipsoid
-
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_eci: A  3x1 vector containing the x, y, and z ECI positions,
-            respectively.
+    pos_eci: A  3x1 vector containing the x, y, and z ECI positions.
     """
 
     lat = pos_lla[0]
@@ -664,12 +632,11 @@ def ned_to_ae(ned):
     Function for converting local North/East/Down to unit Az/Elev
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    ned: A 1x3 or 3x1 vector containing the north, east, and down positions,
-            respectively.
+    ned: A 1x3 or 3x1 vector containing the north, east, and down positions.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    azel: A 2x1 vector containing the Azimuth and Elevation
-        positions in radians, respectively.
+    azel: A 2x1 vector containing Azimuth and Elevation
+        in radians.
     """
     psi_ae = np.arctan2(ned[1], ned[0])
     theta_ae = np.arcsin(ned[2])
@@ -681,12 +648,11 @@ def ned_to_aer(pos_ned):
     Function for converting local North/East/Down to Az/Elev/Range
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_ned: A 1x3 or 3x1 vector containing the north, east, and down positions,
-            respectively.
+    pos_ned: A 1x3 or 3x1 vector containing the north, east, and down positions.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_aer: A 3x1 vector containing the Azimuth, Elevation, and Range
-        positions in radians, respectively.
+    pos_aer: A 3x1 vector containing Azimuth, Elevation, and Range
+        in radians and metres.
     """
     
     x_north = pos_ned[0]
@@ -702,30 +668,27 @@ def ned_to_aer(pos_ned):
     return pos_aer
 
 
-def ned_to_ecef(pos_ned, ori_ecef, ori_lat, ori_lon):
+def ned_to_ecef(pos_ned, sensor):
     """
     Function for converting ECEF coordinates to local NED coordinates
 
     ~~~~~~~~~~~~~~~~~INPUTS~~~~~~~~~~~~
-    pos_ned: A 1x3 or 3x1 vector containing the north, east, and down positions,
-            respectively.
+    pos_ned: A 1x3 or 3x1 vector containing the north, east, and down positions.
 
-    ori_ecef: A 1x3 or 3x1 vector containing the origin of the local NED frame
-             as x_ecef, y_ecef, and z_ecef respectively.
-
-    ori_lat: The latitude of the origin of the local NED frame in radians.
-
-    ori_lon: The longitude of the origin of the local NED frame in radians.
+    sensor: Object containing sensor's LLA and ECEF position.
 
     ~~~~~~~~~~~~~~~OUTPUTS~~~~~~~~~~~~
-    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions,
-             respectively.
+    pos_ecef: A 3x1 vector containing the x, y, and z ECEF positions.
     """
 
-    cos_phi = cos(ori_lat)
-    sin_phi = sin(ori_lat)
-    cos_lambda = cos(ori_lon)
-    sin_lambda = sin(ori_lon)
+    sens_lat = sensor.LLA[0]
+    sens_lon = sensor.LLA[1]
+    sens_ecef = sensor.ECEF
+
+    cos_phi = cos(sens_lat)
+    sin_phi = sin(sens_lat)
+    cos_lambda = cos(sens_lon)
+    sin_lambda = sin(sens_lon)
 
     x_north = pos_ned[0]
     y_east = pos_ned[1]
@@ -737,9 +700,9 @@ def ned_to_ecef(pos_ned, ori_ecef, ori_lat, ori_lon):
     dx = cos_lambda * t - sin_lambda * y_east
     dy = sin_lambda * t + cos_lambda * y_east
 
-    x_ecef = ori_ecef[0] + dx
-    y_ecef = ori_ecef[1] + dy
-    z_ecef = ori_ecef[2] + dz
+    x_ecef = sens_ecef[0] + dx
+    y_ecef = sens_ecef[1] + dy
+    z_ecef = sens_ecef[2] + dz
 
     pos_ecef = [x_ecef], [y_ecef], [z_ecef]
     return pos_ecef
