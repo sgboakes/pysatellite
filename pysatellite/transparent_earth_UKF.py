@@ -50,8 +50,7 @@ if __name__ == "__main__":
         
     satAER = np.zeros((3, simLength))
     for count in range(simLength):
-        satAER[:, count:count+1] = transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sens.ECEF,
-                                                              sens.LLA[0], sens.LLA[1])
+        satAER[:, count:count+1] = transformations.eci_to_aer(satECI[:, count], stepLength, count+1, sens)
 
     angMeasDev = np.float64(1e-6)
     rangeMeasDev = np.float64(20)
